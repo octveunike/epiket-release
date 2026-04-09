@@ -1,0 +1,67 @@
+@extends('layouts.app')
+
+@section('content')
+
+    <div class="page-header">
+        <div>
+            <div class="breadcrumb">Admin / <a href="{{ route('Guru.index') }}" style="color:var(--primary);">Data Guru</a> / Edit</div>
+            <h2>Edit Guru</h2>
+        </div>
+    </div>
+
+    @if (session('success'))
+        <div class="alert alert-success" id="success-alert">
+            <i class="ri-checkbox-circle-line"></i> {{ session('success') }}
+        </div>
+        <script>setTimeout(function() { document.getElementById('success-alert').remove(); }, 3000);</script>
+    @endif
+
+    <div class="card">
+        <form method="POST" action="{{ route('Guru.update', $Guru->id) }}">
+            @csrf
+            @method('PUT')
+
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label class="form-label">NIP <span class="required">*</span></label>
+                    <input type="text" name="nip" class="form-control" placeholder="Masukkan NIP" required
+                        value="{{ old('nip', $Guru->nip) }}">
+                    @error('nip')<small style="color:#ef4444;">{{ $message }}</small>@enderror
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Nama Guru <span class="required">*</span></label>
+                    <input type="text" name="nama_guru" class="form-control" placeholder="Masukkan Nama Guru" required
+                        value="{{ old('nama_guru', $Guru->nama_guru) }}">
+                    @error('nama_guru')<small style="color:#ef4444;">{{ $message }}</small>@enderror
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">User (Akun Login)</label>
+                    <select name="user_id" class="form-control">
+                        <option value="">-- Tidak Terhubung ke User --</option>
+                        @foreach ($users as $u)
+                            <option value="{{ $u->id }}" {{ old('user_id', $Guru->user_id) == $u->id ? 'selected' : '' }}>
+                                {{ $u->name }} ({{ $u->email }})
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('user_id')<small style="color:#ef4444;">{{ $message }}</small>@enderror
+                </div>
+
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ri-save-line"></i> Simpan Perubahan
+                </button>
+                <a href="{{ route('Guru.index') }}" class="btn btn-secondary">
+                    <i class="ri-arrow-left-line"></i> Batal
+                </a>
+            </div>
+
+        </form>
+    </div>
+
+@endsection

@@ -1,0 +1,157 @@
+<?php
+
+namespace App\Http\Controllers\Apps;
+
+use App\Http\Controllers\Controller;
+use App\Models\Admin\Siswa;
+use App\Models\Apps\Kelas;
+use App\Models\Apps\Absensi;
+use App\Models\Apps\AbsensiDetail;
+use App\Models\Apps\Keterlambatan;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+use Exception;
+
+class KeterlambatanController extends Controller
+{
+    public function index(Request $request)
+    {
+        $query = Keterlambatan::with(['siswa', 'absensi.kelas', 'periodeAkademik'])
+            ->where('status', 1)
+            ->orderByDesc('waktu_masuk');
+
+        if ($request->filled('tanggal')) {
+            $query->whereHas('absensi', function ($q) use ($request) {
+                $q->whereDate('tanggal', $request->tanggal);
+            });
+        } else {
+            $query->whereHas('absensi', function ($q) {
+                $q->whereDate('tanggal', today());
+            });
+        }
+
+        if ($request->filled('kelas_id')) {
+            $query->whereHas('absensi', function ($q) use ($request) {
+                $q->where('kelas_id', $request->kelas_id);
+            });
+        }
+
+        $keterlambatan = $query->paginate(25);
+        $kelas         = Kelas::where('status', 1)->orderBy('nama_kelas')->get();
+        $tanggal       = $request->tanggal ?? today()->format('Y-m-d');
+
+        return view('Keterlambatan.index', compact('keterlambatan', 'kelas', 'tanggal'));
+    }
+
+    public function create(Request $request)
+    {
+        $kelas         = Kelas::where('status', 1)->orderBy('nama_kelas')->get();
+        $absensi       = null;
+        $siswa         = collect();
+        $sudahTercatat = collect();
+
+        if ($request->filled('kelas_id')) {
+            $absensi = Absensi::with('kelas', 'periodeAkademik')
+                ->where('kelas_id', $request->kelas_id)
+                ->where('status', 1)
+                ->whereDate('tanggal', today())
+                ->first();
+
+            if ($absensi) {
+                $sudahTerlambatIds = Keterlambatan::where('absensi_id', $absensi->id)
+                    ->where('status', 1)
+                    ->pluck('siswa_id');
+
+                $siswa = Siswa::where('kelas_id', $request->kelas_id)
+                    ->where('status', 1)
+                    ->whereNotIn('id', $sudahTerlambatIds)
+                    ->orderBy('nama_siswa')
+                    ->get();
+
+                $sudahTercatat = Keterlambatan::with('siswa')
+                    ->where('absensi_id', $absensi->id)
+                    ->where('status', 1)
+                    ->orderBy('waktu_masuk')
+                    ->get();
+            }
+        }
+
+        return view('Keterlambatan.create', compact('kelas', 'absensi', 'siswa', 'sudahTercatat'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'absensi_id'  => ['required', 'integer'],
+            'siswa_id'    => ['required', 'integer'],
+            'waktu_masuk' => ['required', 'date_format:H:i'],
+            'alasan'      => ['nullable', 'string', 'max:255'],
+        ]);
+
+        try {
+            $absensi = Absensi::findOrFail($request->absensi_id);
+
+            DB::transaction(function () use ($request, $absensi) {
+
+                AbsensiDetail::updateOrCreate(
+                    [
+                        'absensi_id' => $absensi->id,
+                        'siswa_id'   => $request->siswa_id,
+                    ],
+                    [
+                        'status_absensi_id' => 5,
+                        'is_full_day'       => 1,
+                        'keterangan'        => $request->alasan,
+                        'status'            => '1',
+                        'user_input'        => auth()->user()->id,
+                        'tanggal_input'     => date('Y-m-d H:i:s'),
+                    ]
+                );
+
+                Keterlambatan::create([
+                    'absensi_id'          => $absensi->id,
+                    'siswa_id'            => $request->siswa_id,
+                    'waktu_masuk'         => Carbon::createFromFormat('H:i', $request->waktu_masuk)->setDateFrom(now()),
+                    'alasan'              => $request->alasan,
+                    'periode_akademik_id' => $absensi->periode_akademik_id,
+                    'status'              => '1',
+                    'user_input'          => auth()->user()->id,
+                    'tanggal_input'       => date('Y-m-d H:i:s'),
+                ]);
+            });
+
+            return redirect()->route('Keterlambatan.create', ['kelas_id' => $absensi->kelas_id])
+                ->with('success', 'Keterlambatan berhasil dicatat.');
+
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Gagal menyimpan: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    public function destroy($id)
+    {
+        $kt = Keterlambatan::where('status', 1)->findOrFail($id);
+
+        DB::transaction(function () use ($kt) {
+            AbsensiDetail::where('absensi_id', $kt->absensi_id)
+                ->where('siswa_id', $kt->siswa_id)
+                ->where('status_absensi_id', 5)
+                ->update([
+                    'status_absensi_id' => 1,
+                    'user_update'       => auth()->user()->id,
+                    'tanggal_update'    => date('Y-m-d H:i:s'),
+                ]);
+
+            $kt->update([
+                'status'         => 9,
+                'user_update'    => auth()->user()->id,
+                'tanggal_update' => date('Y-m-d H:i:s'),
+            ]);
+        });
+
+        return redirect()->back()->with('success', 'Data keterlambatan dihapus.');
+    }
+}
