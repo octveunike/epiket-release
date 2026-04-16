@@ -73,7 +73,11 @@
     </div>
 
     {{-- Tombol Verifikasi — hanya tampil kalau belum disetujui dan sudah ada siswa --}}
-    @if ($dispensasi->status_verifikasi_id !== $statusDisetujuiId && $dispensasi->details->isNotEmpty())
+    @if (
+        auth()->user()->hasRole(['Admin','Petugas Piket']) &&
+        $dispensasi->status_verifikasi_id !== $statusDisetujuiId &&
+        $dispensasi->details->isNotEmpty()
+    )
         <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
             <button type="button" class="btn btn-success" onclick="showVerifikasiModal()">
                 <i class="ri-checkbox-circle-line"></i> Verifikasi & Update Absensi
@@ -88,7 +92,10 @@
 </div>
 
 {{-- Form Tambah Siswa — sembunyikan kalau sudah diverifikasi --}}
-@if ($dispensasi->status_verifikasi_id !== $statusDisetujuiId)
+@if (
+    auth()->user()->hasRole(['Admin','Petugas Piket']) &&
+    $dispensasi->status_verifikasi_id !== $statusDisetujuiId
+)
     <div class="card">
         <div class="card-title"><i class="ri-user-add-line"></i> Tambah Siswa Dispensasi</div>
         <form method="POST" action="{{ route('Dispensasi.storeDetail', $dispensasi->id) }}">
@@ -134,7 +141,10 @@
                         <th class="col-no">No</th>
                         <th>Nama Siswa</th>
                         <th>Kelas</th>
-                        @if ($dispensasi->status_verifikasi_id !== $statusDisetujuiId)
+                        @if (
+                            auth()->user()->hasRole(['Admin','Petugas Piket']) &&
+                            $dispensasi->status_verifikasi_id !== $statusDisetujuiId
+                        )
                             <th class="col-center">Aksi</th>
                         @endif
                     </tr>
@@ -145,7 +155,10 @@
                             <td class="col-no">{{ $loop->iteration }}</td>
                             <td><strong>{{ $detail->siswa->nama_siswa ?? '—' }}</strong></td>
                             <td>{{ $detail->siswa->kelas->nama_kelas ?? '—' }}</td>
-                            @if ($dispensasi->status_verifikasi_id !== $statusDisetujuiId)
+                            @if (
+                                auth()->user()->hasRole(['Admin','Petugas Piket']) &&
+                                $dispensasi->status_verifikasi_id !== $statusDisetujuiId
+                            )
                                 <td class="col-center">
                                     <button type="button" class="btn btn-sm btn-danger"
                                         onclick="showDeleteModal({{ $detail->id }})">

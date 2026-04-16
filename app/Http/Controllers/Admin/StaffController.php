@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Staff;
 use App\Models\User;
+use App\Imports\StaffImport;
+use Maatwebsite\Excel\Facades\Excel;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
@@ -64,7 +66,7 @@ class StaffController extends Controller
      */
     public function edit(string $id)
     {
-        $Staff  = Staff::findOrFail($id);
+        $Staff = Staff::findOrFail($id);
         $users = User::all();
         return view('Staff.edit', compact('Staff', 'users'));
     }
@@ -112,5 +114,33 @@ class StaffController extends Controller
         ]);
 
         return redirect()->route('Staff.index')->with('success', 'Data Staff berhasil dihapus');
+    }
+
+    /**
+     * Import data staff dari file Excel.
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:2048'],
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $sebelum = Staff::where('status', '1')->count();
+
+            Excel::import(new StaffImport, $request->file('file'));
+
+            $sesudah = Staff::where('status', '1')->count();
+            $jumlah  = $sesudah - $sebelum;
+
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal import: ' . $e->getMessage());
+        }
+
+        return redirect()->route('Staff.index')->with('success', 'Import berhasil! ' . $jumlah . ' data staff berhasil ditambahkan.');
     }
 }

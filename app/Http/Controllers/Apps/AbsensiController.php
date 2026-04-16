@@ -19,6 +19,11 @@ class AbsensiController extends Controller
 {
     public function index(Request $request)
     {
+        // Wali Kelas tidak punya akses ke index umum, redirect ke halaman validasinya
+        if (auth()->user()->hasRole('Wali Kelas')) {
+            return redirect()->route('Absensi.walikelas.index');
+        }
+
         $query = Absensi::withCount('details')
             ->with(['kelas', 'periodeAkademik', 'statusVerifikasi'])
             ->where('status', 1)
@@ -42,35 +47,40 @@ class AbsensiController extends Controller
 
     public function create()
     {
-        $kelas   = Kelas::where('status', 1)->orderBy('nama_kelas')->get();
-        $periode = PeriodeAkademik::where('status', 1)->get();
+        $kelas       = Kelas::where('status', 1)->orderBy('nama_kelas')->get();
+        $periodeAktif = PeriodeAkademik::where('status', 1)->first();
 
-        return view('Absensi.create', compact('kelas', 'periode'));
+        return view('Absensi.create', compact('kelas', 'periodeAktif'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'kelas_id'            => ['required', 'integer'],
-            'tanggal'             => ['required', 'date'],
-            'periode_akademik_id' => ['required', 'integer'],
+            'kelas_id' => ['required', 'integer'],
+            'tanggal'  => ['required', 'date'],
         ]);
+
+        $periodeAktif = PeriodeAkademik::where('status', 1)->first();
+
+        if (!$periodeAktif) {
+            return back()->with('error', 'Tidak ada periode akademik aktif.')->withInput();
+        }
 
         $statusBelumDiisi = StatusVerifikasi::where('nama_status', 'Menunggu Pengisian')
                                 ->where('status', 1)->first();
 
-        Absensi::create([
+        $absensi = Absensi::create([
             'kelas_id'             => $request->kelas_id,
             'tanggal'              => $request->tanggal,
             'status_verifikasi_id' => $statusBelumDiisi?->id,
-            'periode_akademik_id'  => $request->periode_akademik_id,
+            'periode_akademik_id'  => $periodeAktif->id,
             'status'               => '1',
             'user_input'           => auth()->user()->id,
             'tanggal_input'        => date('Y-m-d H:i:s'),
         ]);
 
-        return redirect()->route('Absensi.index')
-            ->with('success', 'Data absensi berhasil ditambahkan.');
+        return redirect()->route('Absensi.isiAbsensi', $absensi->id)
+            ->with('success', 'Data absensi berhasil ditambahkan. Silakan isi absensi.');
     }
 
     public function isiAbsensi(string $id)
@@ -93,7 +103,6 @@ class AbsensiController extends Controller
             ->orderBy('nama_siswa')
             ->get(['id', 'nama_siswa', 'nis']);
 
-        // Siswa yang sudah tercatat (dari keterlambatan/dispensasi)
         $sudahTercatat = AbsensiDetail::with(['siswa', 'jams.jam'])
             ->where('absensi_id', $absensi->id)
             ->where('status', 1)
@@ -138,7 +147,6 @@ class AbsensiController extends Controller
                     ]
                 );
 
-                // Simpan jam jika ada (per jam = is_full_day=0)
                 $jams = $d['jams'] ?? [];
                 if (!$isFullDay && !empty($jams)) {
                     $detail->jams()->where('status', 1)->update([
@@ -158,7 +166,6 @@ class AbsensiController extends Controller
                 }
             }
 
-            // Update status → Menunggu Wali (id=3)
             $absensi->update([
                 'status_verifikasi_id' => 3,
                 'user_update'          => auth()->user()->id,
@@ -222,5 +229,109 @@ class AbsensiController extends Controller
 
         return redirect()->route('Absensi.index')
             ->with('success', 'Data absensi berhasil dihapus.');
+    }
+
+    // ── WALI KELAS: Index (daftar menunggu validasi) ──────────
+
+    public function waliKelasIndex(Request $request)
+    {
+        $user = auth()->user();
+
+        // Tabel atas: semua absensi menunggu validasi wali
+        $query = Absensi::with(['kelas', 'periodeAkademik', 'statusVerifikasi'])
+            ->where('status', 1)
+            ->where('status_verifikasi_id', 3)
+            ->orderByDesc('tanggal');
+
+        if ($request->filled('dari')) {
+            $query->whereDate('tanggal', '>=', $request->dari);
+        }
+        if ($request->filled('sampai')) {
+            $query->whereDate('tanggal', '<=', $request->sampai);
+        }
+
+        $absensiList = $query->get();
+
+        // Tabel bawah: sudah divalidasi (history)
+        $historyQuery = Absensi::with(['kelas', 'periodeAkademik', 'statusVerifikasi'])
+            ->where('status', 1)
+            ->whereIn('status_verifikasi_id', [4, 5, 6])
+            ->orderByDesc('tanggal_update');
+
+        if ($request->filled('dari')) {
+            $historyQuery->whereDate('tanggal', '>=', $request->dari);
+        }
+        if ($request->filled('sampai')) {
+            $historyQuery->whereDate('tanggal', '<=', $request->sampai);
+        }
+
+        $historyList = $historyQuery->get();
+        $kelas       = null;
+
+        return view('Absensi/index-walikelas', compact('absensiList', 'historyList', 'kelas'));
+    }
+
+    // ── WALI KELAS: Validasi satu absensi ────────────────────
+
+    public function waliKelasValidasi(Request $request, string $id)
+    {
+        $user    = auth()->user();
+        $absensi = Absensi::where('status', 1)
+            ->where('status_verifikasi_id', 3)
+            ->findOrFail($id);
+
+        $absensi->update([
+            'status_verifikasi_id' => 5,
+            'user_update'          => $user->id,
+            'tanggal_update'       => now(),
+        ]);
+
+        return redirect()->route('Absensi.walikelas.index')
+            ->with('success', 'Absensi berhasil divalidasi.');
+    }
+
+    // ── WALI KELAS: Bulk validasi ─────────────────────────────
+
+    public function waliKelasBulkValidasi(Request $request)
+    {
+        $request->validate([
+            'ids'   => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $user    = auth()->user();
+        $updated = Absensi::where('status', 1)
+            ->where('status_verifikasi_id', 3)
+            ->whereIn('id', $request->ids)
+            ->update([
+                'status_verifikasi_id' => 5,
+                'user_update'          => $user->id,
+                'tanggal_update'       => now(),
+            ]);
+
+        return redirect()->route('Absensi.walikelas.index')
+            ->with('success', $updated . ' absensi berhasil divalidasi.');
+    }
+
+    // ── WALI KELAS: History validasi ──────────────────────────
+
+    public function waliKelasHistory(Request $request)
+    {
+        $query = Absensi::with(['kelas', 'periodeAkademik', 'statusVerifikasi'])
+            ->where('status', 1)
+            ->whereIn('status_verifikasi_id', [4, 5, 6])
+            ->orderByDesc('tanggal_update');
+
+        if ($request->filled('dari')) {
+            $query->whereDate('tanggal', '>=', $request->dari);
+        }
+        if ($request->filled('sampai')) {
+            $query->whereDate('tanggal', '<=', $request->sampai);
+        }
+
+        $historyList = $query->get();
+        $kelas       = null;
+
+        return view('Absensi/history-walikelas', compact('historyList', 'kelas'));
     }
 }

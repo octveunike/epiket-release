@@ -4,7 +4,7 @@
 
     <div class="page-header">
         <div>
-            <div class="breadcrumb">Admin / <a href="{{ route('Organisasi.index') }}" style="color:var(--primary);">Data Organisasi</a> / Edit</div>
+            <div class="breadcrumb">Admin / <a href="{{ route('Organisasi.index') }}" class="breadcrumb-link">Data Organisasi</a> / Edit</div>
             <h2>Edit Organisasi</h2>
         </div>
     </div>
@@ -27,6 +27,7 @@
                 <div class="form-group">
                     <label class="form-label">Nama Organisasi <span class="required">*</span></label>
                     <input type="text" name="nama_organisasi" class="form-control"
+                        placeholder="Masukkan nama organisasi"
                         value="{{ old('nama_organisasi', $Organisasi->nama_organisasi) }}" required>
                     @error('nama_organisasi')<small style="color:#ef4444;">{{ $message }}</small>@enderror
                 </div>
@@ -43,7 +44,8 @@
                 </div>
                 <div class="form-group" style="grid-column:1/-1;">
                     <label class="form-label">Keterangan</label>
-                    <textarea name="keterangan" class="form-control" rows="2">{{ old('keterangan', $Organisasi->keterangan) }}</textarea>
+                    <textarea name="keterangan" class="form-control" rows="2"
+                        placeholder="Masukkan keterangan (opsional)">{{ old('keterangan', $Organisasi->keterangan) }}</textarea>
                 </div>
             </div>
             <div class="form-actions">
@@ -62,7 +64,7 @@
                 </h3>
                 <small style="color:var(--text-muted);">{{ $anggota->count() }} anggota aktif</small>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" onclick="openTambahModal()">
+            <button type="button" class="btn btn-primary" onclick="openTambahModal()">
                 <i class="ri-user-add-line"></i> Tambah Anggota
             </button>
         </div>
@@ -129,7 +131,7 @@
                         </div>
                     </div>
                     <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;" id="siswaCounter"></div>
-                    {{-- List: pakai table agar tidak terpengaruh CSS global yang override flex/block --}}
+                    {{-- List --}}
                     <div style="border:1.5px solid #e0e0e0;border-radius:8px;overflow:hidden;max-height:300px;overflow-y:auto;">
                         <table style="width:100%;border-collapse:collapse;" id="siswaTable">
                             <tbody>
@@ -211,7 +213,6 @@
         document.getElementById('siswaSearch').value = '';
         document.getElementById('kelasFilter').value = '';
         document.getElementById('selectedLabel').textContent = '';
-        // Reset semua row
         document.querySelectorAll('[id^="siswaOpt_"]').forEach(el => {
             el.style.background = '';
             const r = el.querySelector('input[type=radio]');
@@ -242,7 +243,6 @@
     }
 
     function selectRow(div) {
-        // Uncheck semua, highlight baris ini
         document.querySelectorAll('[id^="siswaOpt_"]').forEach(el => {
             el.style.background = '';
             el.querySelector('input[type=radio]').checked = false;

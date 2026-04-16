@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Guru;
 use App\Models\User;
+use App\Imports\GuruImport;
+use Maatwebsite\Excel\Facades\Excel;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
@@ -116,5 +118,33 @@ class GuruController extends Controller
         ]);
 
         return redirect()->route('Guru.index')->with('success', 'Data Guru berhasil dihapus');
+    }
+
+    /**
+     * Import data guru dari file Excel.
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:2048'],
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $sebelum = Guru::where('status', '1')->count();
+
+            Excel::import(new GuruImport, $request->file('file'));
+
+            $sesudah = Guru::where('status', '1')->count();
+            $jumlah  = $sesudah - $sebelum;
+
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal import: ' . $e->getMessage());
+        }
+
+        return redirect()->route('Guru.index')->with('success', 'Import berhasil! ' . $jumlah . ' data guru berhasil ditambahkan.');
     }
 }

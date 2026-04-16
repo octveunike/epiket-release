@@ -37,14 +37,7 @@
 
             <div class="form-group">
                 <label class="form-label">Periode Akademik <span class="required">*</span></label>
-                <select name="periode_akademik_id" class="form-control" required>
-                    <option value="">-- Pilih Periode --</option>
-                    @foreach ($periode as $p)
-                        <option value="{{ $p->id }}" {{ old('periode_akademik_id') == $p->id ? 'selected' : '' }}>
-                            {{ $p->nama_periode }}
-                        </option>
-                    @endforeach
-                </select>
+                <input type="text" class="form-control" value="{{ $periodeAktif->nama_periode }}" readonly>
                 @error('periode_akademik_id')<small style="color:#ef4444;">{{ $message }}</small>@enderror
             </div>
 

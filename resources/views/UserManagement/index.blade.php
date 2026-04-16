@@ -26,51 +26,50 @@
     @endif
 
     <div class="card">
-        <div class="table-responsive">
-            <table>
-                <thead>
+        <table id="tableUser" class="dt-table"
+            data-destroy-url="{{ route('UserManagement.destroy', '') }}">
+            <thead>
+                <tr>
+                    <th style="text-align:center; width:5%;">No</th>
+                    <th>Nama</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th style="text-align:center;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($data as $val)
                     <tr>
-                        <th class="col-no">No</th>
-                        <th>Nama</th>
-                        <th>Username</th>
-                        <th>Role</th>
-                        <th class="col-center">Aksi</th>
+                        <td style="text-align:center;">{{ $loop->iteration }}</td>
+                        <td>{{ $val->nama }}</td>
+                        <td>{{ $val->username }}</td>
+                        <td>
+                            @forelse ($val->roles as $role)
+                                <span class="role-badge">{{ $role->nama_role }}</span>
+                            @empty
+                                <span class="text-italic-muted">Tidak ada role</span>
+                            @endforelse
+                        </td>
+                        <td style="text-align:center; white-space:nowrap;">
+                            <a href="{{ route('UserManagement.edit', $val->id) }}" class="btn btn-sm btn-primary">
+                                <i class="ri-edit-2-line"></i> Edit
+                            </a>
+                            <button type="button" class="btn btn-sm btn-danger"
+                                onclick="showDeleteModal({{ $val->id }}, '{{ addslashes($val->nama) }}')">
+                                <i class="ri-delete-bin-line"></i> Hapus
+                            </button>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    @forelse ($data as $val)
-                        <tr>
-                            <td class="col-no">{{ $loop->iteration }}</td>
-                            <td>{{ $val->nama }}</td>
-                            <td>{{ $val->username }}</td>
-                            <td>
-                                @forelse ($val->roles as $role)
-                                    <span class="role-badge">{{ $role->nama_role }}</span>
-                                @empty
-                                    <span class="text-italic-muted">Tidak ada role</span>
-                                @endforelse
-                            </td>
-                            <td class="col-center" style="white-space:nowrap;">
-                                <a href="{{ route('UserManagement.edit', $val->id) }}" class="btn btn-sm btn-primary">
-                                    <i class="ri-edit-2-line"></i> Edit
-                                </a>
-                                <button type="button" class="btn btn-sm btn-danger"
-                                    onclick="showDeleteModal({{ $val->id }}, '{{ addslashes($val->nama) }}')">
-                                    <i class="ri-delete-bin-line"></i> Hapus
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="td-empty">
-                                <i class="ri-user-line" style="font-size:32px;display:block;margin-bottom:8px;"></i>
-                                Belum ada data user
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                @empty
+                    <tr>
+                        <td colspan="5" class="td-empty">
+                            <i class="ri-user-line" style="font-size:32px;display:block;margin-bottom:8px;"></i>
+                            Belum ada data user
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
     <div class="confirm-overlay" id="deleteModal">

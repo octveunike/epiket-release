@@ -132,7 +132,7 @@ class OrganisasiController extends Controller
             return redirect()->back()->withInput()->with('error', $e->getMessage());
         }
 
-        return redirect()->route('Organisasi.edit', $id)
+        return redirect()->route('Organisasi.index', $id)
             ->with('success', 'Data organisasi berhasil diperbarui.');
     }
 
@@ -159,10 +159,6 @@ class OrganisasiController extends Controller
         return redirect()->route('Organisasi.index')
             ->with('success', 'Organisasi berhasil dihapus.');
     }
-
-    // ──────────────────────────────────────────────
-    // CRUD ANGGOTA (inline di halaman edit)
-    // ──────────────────────────────────────────────
 
     /**
      * Tambah satu anggota ke organisasi.

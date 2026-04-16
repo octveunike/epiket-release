@@ -4,7 +4,7 @@
 
     <div class="page-header">
         <div>
-            <div class="breadcrumb">Admin / Master Data / <a href="{{ route('Organisasi.index') }}" class="breadcrumb-link">Data Organisasi</a></div>
+            <div class="breadcrumb">Admin / <a href="{{ route('Organisasi.index') }}" class="breadcrumb-link">Data Organisasi</a></div>
             <h2>Data Organisasi</h2>
         </div>
         <a href="{{ route('Organisasi.create') }}" class="btn btn-primary">
@@ -26,63 +26,62 @@
     @endif
 
     <div class="card">
-        <div class="table-responsive">
-            <table>
-                <thead>
+        <table id="tableOrganisasi" class="dt-table"
+            data-destroy-url="{{ route('Organisasi.destroy', '') }}">
+            <thead>
+                <tr>
+                    <th style="text-align:center; width:5%;">No</th>
+                    <th style="width:15%;">Nama Organisasi</th>
+                    <th style="width:15%;">Pembina</th>
+                    <th style="text-align:center; width:13%;">Anggota</th>
+                    <th style="width:20%;">Keterangan</th>
+                    <th style="text-align:center; width:30%;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($data as $val)
                     <tr>
-                        <th class="col-no">No</th>
-                        <th style="width:15%;">Nama Organisasi</th>
-                        <th style="width:15%;">Pembina</th>
-                        <th class="col-center" style="width:13%;">Anggota</th>
-                        <th style="width:20%;">Keterangan</th>
-                        <th class="col-center" style="width:30%;">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($data as $val)
-                        <tr>
-                            <td class="col-no">{{ $loop->iteration }}</td>
-                            <td style="font-weight:600;white-space:nowrap;">{{ $val->nama_organisasi }}</td>
-                            <td style="white-space:nowrap;">
-                                @if ($val->pembina)
-                                    <span style="display:flex;align-items:center;gap:6px;">
-                                        <i class="ri-user-star-line" style="color:var(--primary);flex-shrink:0;"></i>
-                                        {{ $val->pembina->nama_guru }}
-                                    </span>
-                                @else
-                                    <span class="text-muted-sm">—</span>
-                                @endif
-                            </td>
-                            <td class="col-center">
-                                <span style="font-size:13px;color:var(--text-main);">
-                                    <i class="ri-group-line" style="color:var(--primary);font-size:14px;vertical-align:middle;"></i>
-                                    {{ $val->siswaOrganisasi->count() }} siswa
+                        <td style="text-align:center;">{{ $loop->iteration }}</td>
+                        <td style="font-weight:600; white-space:nowrap;">{{ $val->nama_organisasi }}</td>
+                        <td style="white-space:nowrap;">
+                            @if ($val->pembina)
+                                <span style="display:flex; align-items:center; gap:6px;">
+                                    <i class="ri-user-star-line" style="color:var(--primary); flex-shrink:0;"></i>
+                                    {{ $val->pembina->nama_guru }}
                                 </span>
-                            </td>
-                            <td style="color:var(--text-muted);font-size:13px;">{{ $val->keterangan ?? '—' }}</td>
-                            <td class="col-center" style="white-space:nowrap;">
-                                <a href="{{ route('Organisasi.show', $val->id) }}" class="btn btn-sm btn-secondary">
-                                    <i class="ri-group-line"></i> Anggota
-                                </a>
-                                <a href="{{ route('Organisasi.edit', $val->id) }}" class="btn btn-sm btn-primary">
-                                    <i class="ri-edit-2-line"></i> Edit
-                                </a>
-                                <button type="button" class="btn btn-sm btn-danger" onclick="showDeleteModal({{ $val->id }})">
-                                    <i class="ri-delete-bin-line"></i> Hapus
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="td-empty">
-                                <i class="ri-team-line" style="font-size:32px;display:block;margin-bottom:8px;"></i>
-                                Belum ada data organisasi
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                            @else
+                                <span class="text-muted-sm">—</span>
+                            @endif
+                        </td>
+                        <td style="text-align:center;">
+                            <span style="font-size:13px; color:var(--text-main);">
+                                <i class="ri-group-line" style="color:var(--primary); font-size:14px; vertical-align:middle;"></i>
+                                {{ $val->siswaOrganisasi->count() }} siswa
+                            </span>
+                        </td>
+                        <td style="color:var(--text-muted); font-size:13px;">{{ $val->keterangan ?? '—' }}</td>
+                        <td style="text-align:center; white-space:nowrap;">
+                            <a href="{{ route('Organisasi.show', $val->id) }}" class="btn btn-sm btn-secondary">
+                                <i class="ri-group-line"></i> Anggota
+                            </a>
+                            <a href="{{ route('Organisasi.edit', $val->id) }}" class="btn btn-sm btn-primary">
+                                <i class="ri-edit-2-line"></i> Edit
+                            </a>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="showDeleteModal({{ $val->id }})">
+                                <i class="ri-delete-bin-line"></i> Hapus
+                            </button>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="td-empty">
+                            <i class="ri-team-line" style="font-size:32px;display:block;margin-bottom:8px;"></i>
+                            Belum ada data organisasi
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
     <div class="confirm-overlay" id="deleteModal">

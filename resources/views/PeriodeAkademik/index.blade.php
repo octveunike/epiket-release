@@ -4,7 +4,7 @@
 
     <div class="page-header">
         <div>
-            <div class="breadcrumb">Admin / Master Data / <a href="{{ route('PeriodeAkademik.index') }}" style="color:var(--primary);">Data Siswa</a></div>
+            <div class="breadcrumb">Admin / Master Data / <a href="{{ route('PeriodeAkademik.index') }}" class="breadcrumb-link">Data Periode Akademik</a></div>
             <h2>Data Periode Akademik</h2>
         </div>
         <a href="{{ route('PeriodeAkademik.create') }}" class="btn btn-primary">
@@ -28,48 +28,47 @@
     @endif
 
     <div class="card">
-        <div class="table-responsive">
-            <table>
-                <thead>
+        <table id="tablePeriode" class="dt-table"
+            data-destroy-url="{{ route('PeriodeAkademik.destroy', '') }}">
+            <thead>
+                <tr>
+                    <th style="text-align:center; width:5%;">No</th>
+                    <th>Nama Periode</th>
+                    <th>Tahun Ajaran</th>
+                    <th>Semester</th>
+                    <th>Tanggal Mulai</th>
+                    <th>Tanggal Selesai</th>
+                    <th style="text-align:center;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($data as $val)
                     <tr>
-                        <th style="width:5%; text-align:center;">No</th>
-                        <th>Nama Periode</th>
-                        <th>Tahun Ajaran</th>
-                        <th>Semester</th>
-                        <th>Tanggal Mulai</th>
-                        <th>Tanggal Selesai</th>
-                        <th style="width:15%; text-align:center;">Aksi</th>
+                        <td style="text-align:center;">{{ $loop->iteration }}</td>
+                        <td>{{ $val->nama_periode }}</td>
+                        <td>{{ $val->tahun_ajaran }}</td>
+                        <td>{{ $val->semester }}</td>
+                        <td data-order="{{ $val->tanggal_mulai }}">{{ date('d M Y', strtotime($val->tanggal_mulai)) }}</td>
+                        <td data-order="{{ $val->tanggal_selesai }}">{{ date('d M Y', strtotime($val->tanggal_selesai)) }}</td>
+                        <td style="text-align:center; white-space:nowrap;">
+                            <a href="{{ route('PeriodeAkademik.edit', $val->id) }}" class="btn btn-sm btn-primary">
+                                <i class="ri-edit-2-line"></i> Edit
+                            </a>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="showDeleteModal({{ $val->id }})">
+                                <i class="ri-delete-bin-line"></i> Hapus
+                            </button>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    @forelse ($data as $val)
-                        <tr>
-                            <td style="text-align:center;">{{ $loop->iteration }}</td>
-                            <td>{{ $val->nama_periode }}</td>
-                            <td>{{ $val->tahun_ajaran }}</td>
-                            <td>{{ $val->semester }}</td>
-                            <td>{{ date('d M Y', strtotime($val->tanggal_mulai)) }}</td>
-                            <td>{{ date('d M Y', strtotime($val->tanggal_selesai)) }}</td>
-                            <td style="text-align:center;">
-                                <a href="{{ route('PeriodeAkademik.edit', $val->id) }}" class="btn btn-sm btn-primary">
-                                    <i class="ri-edit-2-line"></i> Edit
-                                </a>
-                                <button type="button" class="btn btn-sm btn-danger" onclick="showDeleteModal({{ $val->id }})">
-                                    <i class="ri-delete-bin-line"></i> Hapus
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" style="text-align:center; color:var(--text-muted); padding:32px;">
-                                <i class="ri-inbox-line" style="font-size:32px; display:block; margin-bottom:8px;"></i>
-                                Belum ada data siswa
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                @empty
+                    <tr>
+                        <td colspan="7" class="td-empty">
+                            <i class="ri-inbox-line" style="font-size:32px;display:block;margin-bottom:8px;"></i>
+                            Belum ada data periode akademik
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
     <div class="confirm-overlay" id="deleteModal">

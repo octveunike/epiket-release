@@ -22,28 +22,37 @@ class DispensasiController extends Controller
 {
     public function index(Request $request)
     {
+        // Default tanggal: H-7 sampai hari ini
+        $dari   = $request->dari ?? now()->subDays(7)->toDateString();
+        $sampai = $request->sampai ?? now()->toDateString();
+
         $query = Dispensasi::with(['organisasi', 'statusVerifikasi'])
             ->withCount('details')
             ->where('status', 1)
             ->orderByDesc('waktu_mulai');
 
-        if ($request->filled('dari')) {
-            $query->whereDate('waktu_mulai', '>=', $request->dari);
-        }
+        // Filter range tanggal
+        $query->whereDate('waktu_mulai', '>=', $dari)
+            ->whereDate('waktu_mulai', '<=', $sampai);
 
-        if ($request->filled('sampai')) {
-            $query->whereDate('waktu_mulai', '<=', $request->sampai);
-        }
-
+        // Filter organisasi (opsional)
         if ($request->filled('organisasi_id')) {
             $query->where('organisasi_id', $request->organisasi_id);
         }
 
         $dispensasi        = $query->get();
         $organisasi        = Organisasi::where('status', 1)->orderBy('nama_organisasi')->get();
-        $statusDisetujuiId = StatusVerifikasi::where('nama_status', 'Disetujui')->where('status', 1)->value('id');
+        $statusDisetujuiId = StatusVerifikasi::where('nama_status', 'Disetujui')
+                                    ->where('status', 1)
+                                    ->value('id');
 
-        return view('Dispensasi.index', compact('dispensasi', 'organisasi', 'statusDisetujuiId'));
+        return view('Dispensasi.index', compact(
+            'dispensasi',
+            'organisasi',
+            'statusDisetujuiId',
+            'dari',
+            'sampai'
+        ));
     }
 
     public function create()
@@ -57,7 +66,7 @@ class DispensasiController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'organisasi_id'       => ['required', 'integer'],
+            'organisasi_id'       => ['nullable', 'integer'],
             'periode_akademik_id' => ['required', 'integer'],
             'waktu_mulai'         => ['required', 'date'],
             'waktu_selesai'       => ['required', 'date', 'after_or_equal:waktu_mulai'],
@@ -72,6 +81,12 @@ class DispensasiController extends Controller
         }
 
         $statusMenunggu = StatusVerifikasi::where('nama_status', 'Menunggu Piket')->where('status', 1)->first();
+        $statusDisetujui = StatusVerifikasi::where('nama_status', 'Disetujui')->where('status', 1)->first();
+
+        $user = auth()->user();
+        $statusId = $user->hasRole('Petugas Piket')
+            ? $statusDisetujui?->id   // auto approve
+            : $statusMenunggu?->id;  // default
 
         $dispensasi = Dispensasi::create([
             'organisasi_id'        => $request->organisasi_id,
@@ -80,7 +95,7 @@ class DispensasiController extends Controller
             'waktu_selesai'        => $request->waktu_selesai,
             'kegiatan'             => $request->kegiatan,
             'lampiran_dispensasi'  => $lampiranPath,
-            'status_verifikasi_id' => $statusMenunggu?->id,
+            'status_verifikasi_id' => $statusId,
             'status'               => '1',
             'user_input'           => auth()->user()->id,
             'tanggal_input'        => date('Y-m-d H:i:s'),
@@ -88,30 +103,6 @@ class DispensasiController extends Controller
 
         return redirect()->route('Dispensasi.show', $dispensasi->id)
             ->with('success', 'Dispensasi berhasil dibuat. Silakan tambahkan siswa.');
-    }
-
-    public function show(string $id)
-    {
-        $dispensasi = Dispensasi::with([
-            'organisasi',
-            'statusVerifikasi',
-            'details.siswa.kelas',
-        ])->where('status', 1)->findOrFail($id);
-
-        $kelas = Kelas::where('status', 1)->orderBy('nama_kelas')->get();
-
-        $sudahDitambahkan = $dispensasi->details->pluck('siswa_id');
-
-        $siswaPerKelas = Siswa::where('status', 1)
-            ->whereNotIn('id', $sudahDitambahkan)
-            ->orderBy('nama_siswa')
-            ->get(['id', 'nama_siswa', 'kelas_id'])
-            ->groupBy('kelas_id')
-            ->map(fn($group) => $group->values());
-
-        $statusDisetujuiId = StatusVerifikasi::where('nama_status', 'Disetujui')->where('status', 1)->value('id');
-
-        return view('Dispensasi.show', compact('dispensasi', 'kelas', 'siswaPerKelas', 'statusDisetujuiId'));
     }
 
     public function storeDetail(Request $request, string $id)
@@ -227,5 +218,29 @@ class DispensasiController extends Controller
 
         return redirect()->route('Dispensasi.index')
             ->with('success', 'Dispensasi berhasil dihapus.');
+    }
+
+    public function show(string $id)
+    {
+        $dispensasi = Dispensasi::with([
+            'organisasi',
+            'statusVerifikasi',
+            'details.siswa.kelas',
+        ])->where('status', 1)->findOrFail($id);
+
+        $kelas = Kelas::where('status', 1)->orderBy('nama_kelas')->get();
+
+        $sudahDitambahkan = $dispensasi->details->pluck('siswa_id');
+
+        $siswaPerKelas = Siswa::where('status', 1)
+            ->whereNotIn('id', $sudahDitambahkan)
+            ->orderBy('nama_siswa')
+            ->get(['id', 'nama_siswa', 'kelas_id'])
+            ->groupBy('kelas_id')
+            ->map(fn($group) => $group->values());
+
+        $statusDisetujuiId = StatusVerifikasi::where('nama_status', 'Disetujui')->where('status', 1)->value('id');
+
+        return view('Dispensasi.show', compact('dispensasi', 'kelas', 'siswaPerKelas', 'statusDisetujuiId'));
     }
 }

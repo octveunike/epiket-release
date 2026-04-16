@@ -24,42 +24,69 @@
     <div class="alert alert-danger"><i class="ri-error-warning-line"></i> {{ session('error') }}</div>
 @endif
 
-{{-- Step 1: Pilih Kelas (auto-submit on change) --}}
+{{-- Pilih Kelas + Tanggal --}}
 <div class="card">
-    <div class="card-title"><i class="ri-door-open-line"></i> Pilih Kelas</div>
-    <form method="GET" action="{{ route('Keterlambatan.create') }}" id="form-kelas">
-        <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Kelas <span class="required">*</span></label>
-            <select name="kelas_id" id="kelas-select" class="form-control" required>
-                <option value="">-- Pilih Kelas --</option>
-                @foreach ($kelas as $k)
-                    <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
-                        {{ $k->nama_kelas }}
-                    </option>
-                @endforeach
-            </select>
+    <div class="card-title"><i class="ri-door-open-line"></i> Pilih Kelas & Tanggal</div>
+    <form method="GET" action="{{ route('Keterlambatan.create') }}" id="form-filter">
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="form-group" style="margin-bottom:0;flex:2;min-width:180px;">
+                <label class="form-label">Kelas <span class="required">*</span></label>
+                <select name="kelas_id" id="kelas-select" class="form-control" required>
+                    <option value="">-- Pilih Kelas --</option>
+                    @foreach ($kelas as $k)
+                        <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
+                            {{ $k->nama_kelas }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;flex:1;min-width:160px;">
+                <label class="form-label">Tanggal <span class="required">*</span></label>
+                <input type="date" name="tanggal" id="tanggal-input" class="form-control"
+                    value="{{ request('tanggal', now()->format('Y-m-d')) }}" required>
+            </div>
+            <div style="flex-shrink:0;padding-bottom:1px;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ri-search-line"></i> Tampilkan
+                </button>
+            </div>
         </div>
     </form>
 </div>
 
-{{-- Area konten yang berubah sesuai kelas (di-render server-side saat ada kelas_id) --}}
-<div id="kelas-content">
-@if (request('kelas_id'))
+{{-- Konten hasil pencarian --}}
+@if (request('kelas_id') && request('tanggal'))
 
     @if (!$absensi)
         <div class="alert alert-warning">
             <i class="ri-error-warning-line"></i>
-            Absensi hari ini untuk kelas ini belum dibuat. Hubungi admin untuk membuat data absensi terlebih dahulu.
+            Absensi untuk kelas ini pada tanggal
+            <strong>{{ \Carbon\Carbon::parse(request('tanggal'))->translatedFormat('d F Y') }}</strong>
+            belum dibuat. Hubungi admin untuk membuat data absensi terlebih dahulu.
         </div>
 
     @else
 
+        {{-- Info absensi yang ditemukan --}}
+        <div class="ab-infobar" style="margin-bottom:16px;">
+            <div class="ab-infobar-left">
+                <i class="ri-school-line"></i>
+                <strong>{{ $absensi->kelas->nama_kelas ?? '—' }}</strong>
+                <span class="ab-infobar-sep">·</span>
+                <span>{{ \Carbon\Carbon::parse($absensi->tanggal)->translatedFormat('l, d F Y') }}</span>
+                <span class="ab-infobar-sep">·</span>
+                <span>{{ $absensi->periodeAkademik->nama_periode ?? '—' }}</span>
+            </div>
+        </div>
+
         @if ($siswa->isNotEmpty())
             <div class="card">
                 <div class="card-title"><i class="ri-time-line"></i> Form Keterlambatan</div>
-                <form method="POST" action="{{ route('Keterlambatan.store') }}" id="form-keterlambatan">
+                <form method="POST" action="{{ route('Keterlambatan.store') }}">
                     @csrf
                     <input type="hidden" name="absensi_id" value="{{ $absensi->id }}">
+                    <input type="hidden" name="kelas_id"   value="{{ request('kelas_id') }}">
+                    <input type="hidden" name="tanggal"    value="{{ request('tanggal') }}">
 
                     <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
                         <div class="form-group" style="margin-bottom:0;flex:2;min-width:180px;">
@@ -100,12 +127,19 @@
         @else
             <div class="alert alert-info">
                 <i class="ri-information-line"></i>
-                Semua siswa di kelas ini sudah tercatat terlambat hari ini.
+                Semua siswa di kelas ini sudah tercatat terlambat pada tanggal ini.
             </div>
         @endif
 
+        {{-- Tabel sudah tercatat --}}
         @if ($sudahTercatat->isNotEmpty())
             <div class="card">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                    <div class="card-title" style="margin-bottom:0;">
+                        <i class="ri-list-check-2"></i> Sudah Tercatat Terlambat
+                    </div>
+                    <span class="badge badge-danger">{{ $sudahTercatat->count() }} siswa</span>
+                </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -142,20 +176,27 @@
 
     @endif
 @endif
-</div>
 
-{{-- Modal hapus konsisten dengan Kelas index --}}
-<div class="confirm-overlay" id="deleteModal">
-    <div class="confirm-box">
-        <div class="confirm-icon">!</div>
-        <h3>Are you sure?</h3>
-        <p>Data keterlambatan ini akan dihapus.<br>Status absensi siswa akan dikembalikan ke <strong>Hadir</strong>.</p>
-        <div class="confirm-actions">
+{{-- Modal Hapus --}}
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <span class="modal-title">Konfirmasi Hapus</span>
+            <button class="modal-close" onclick="closeDeleteModal()"><i class="ri-close-line"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-icon danger"><i class="ri-error-warning-line"></i></div>
+            <p class="modal-confirm-text">
+                Hapus data keterlambatan ini?<br>
+                <small class="text-danger-sm">Status absensi siswa akan dikembalikan ke Hadir.</small>
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Batal</button>
             <form id="delete-form" method="POST" style="display:inline;">
                 @csrf @method('DELETE')
-                <button type="submit" class="btn btn-danger">Yes, delete it!</button>
+                <button type="submit" class="btn btn-danger"><i class="ri-delete-bin-line"></i> Hapus</button>
             </form>
-            <button onclick="closeDeleteModal()" class="btn btn-secondary">Cancel</button>
         </div>
     </div>
 </div>
@@ -164,27 +205,12 @@
 
 @push('scripts')
 <script>
-// Auto-submit form kelas saat dropdown berubah
-document.getElementById('kelas-select').addEventListener('change', function () {
-    if (this.value) {
-        // Tampilkan loading state
-        const content = document.getElementById('kelas-content');
-        content.style.opacity = '0.4';
-        content.style.pointerEvents = 'none';
-        document.getElementById('form-kelas').submit();
-    } else {
-        // Kosongkan konten jika pilih "--"
-        document.getElementById('kelas-content').innerHTML = '';
-        window.history.replaceState({}, '', '{{ route('Keterlambatan.create') }}');
-    }
-});
-
 function showDeleteModal(id) {
     document.getElementById('delete-form').action = "{{ route('Keterlambatan.destroy', '') }}/" + id;
-    document.getElementById('deleteModal').classList.add('show');
+    document.getElementById('deleteModal').classList.add('active');
 }
 function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.remove('show');
+    document.getElementById('deleteModal').classList.remove('active');
 }
 const dm = document.getElementById('deleteModal');
 if (dm) dm.addEventListener('click', function(e) {

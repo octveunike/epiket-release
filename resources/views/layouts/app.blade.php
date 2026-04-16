@@ -1,12 +1,14 @@
-{{-- app.blade.php --}}
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E-PIKET — @yield('title', 'Dashboard')</title>
+
+    <link rel="stylesheet" href="{{ asset('assets/datatables/datatables.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/remixicon/remixicon.css') }}">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-    <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet">
+
     @stack('styles')
 </head>
 <body>
@@ -25,9 +27,11 @@
 
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+    <script src="{{ asset('assets/jquery/jquery-3.7.1.min.js') }}"></script>
+    <script src="{{ asset('assets/datatables/datatables.min.js') }}"></script>
+
     <script src="{{ asset('js/app.js') }}"></script>
+
     @stack('scripts')
 
     <script>

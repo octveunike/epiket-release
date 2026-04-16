@@ -36,9 +36,20 @@ Route::middleware(['auth'])->group(function () {
 
     // Absensi
     Route::prefix('absensi')->name('Absensi.')->group(function () {
+
         Route::get('/',          [App\Http\Controllers\Apps\AbsensiController::class, 'index'])->name('index');
         Route::get('/add',       [App\Http\Controllers\Apps\AbsensiController::class, 'create'])->name('create');
         Route::post('/add',      [App\Http\Controllers\Apps\AbsensiController::class, 'store'])->name('store');
+
+        // ⚠️ Wali Kelas routes HARUS di atas /{id} agar tidak tertangkap wildcard
+        Route::prefix('wali')->name('walikelas.')->group(function () {
+            Route::get('/',        [App\Http\Controllers\Apps\AbsensiController::class, 'waliKelasIndex'])->name('index');
+            Route::get('/history', [App\Http\Controllers\Apps\AbsensiController::class, 'waliKelasHistory'])->name('history');
+            Route::post('/bulk',   [App\Http\Controllers\Apps\AbsensiController::class, 'waliKelasBulkValidasi'])->name('bulkValidasi');
+            Route::patch('/{id}',  [App\Http\Controllers\Apps\AbsensiController::class, 'waliKelasValidasi'])->name('validasi');
+        });
+
+        // Wildcard /{id} di bawah semua static routes
         Route::get('/{id}/isi',  [App\Http\Controllers\Apps\AbsensiController::class, 'isiAbsensi'])->name('isiAbsensi');
         Route::post('/{id}/isi', [App\Http\Controllers\Apps\AbsensiController::class, 'storeDetail'])->name('storeDetail');
         Route::get('/{id}',      [App\Http\Controllers\Apps\AbsensiController::class, 'show'])->name('show');
@@ -58,11 +69,17 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/',                    [App\Http\Controllers\Apps\DispensasiController::class, 'index'])->name('index');
         Route::get('/add',                 [App\Http\Controllers\Apps\DispensasiController::class, 'create'])->name('create');
         Route::post('/add',                [App\Http\Controllers\Apps\DispensasiController::class, 'store'])->name('store');
+        Route::post('/{id}/detail',        [App\Http\Controllers\Apps\DispensasiController::class, 'storeDetail'])->name('storeDetail');
+        Route::patch('/{id}/verifikasi',   [App\Http\Controllers\Apps\DispensasiController::class, 'verifikasi'])->name('verifikasi');
+        Route::delete('/detail/{id}',      [App\Http\Controllers\Apps\DispensasiController::class, 'destroyDetail'])->name('destroyDetail');
         Route::get('/{id}',                [App\Http\Controllers\Apps\DispensasiController::class, 'show'])->name('show');
         Route::delete('/{id}',             [App\Http\Controllers\Apps\DispensasiController::class, 'destroy'])->name('destroy');
-        Route::post('/{id}/detail',        [App\Http\Controllers\Apps\DispensasiController::class, 'storeDetail'])->name('storeDetail');
-        Route::delete('/detail/{id}',      [App\Http\Controllers\Apps\DispensasiController::class, 'destroyDetail'])->name('destroyDetail');
-        Route::patch('/{id}/verifikasi', [App\Http\Controllers\Apps\DispensasiController::class, 'verifikasi'])->name('verifikasi');
+    });
+
+    // Laporan
+    Route::prefix('laporan')->name('Laporan.')->group(function () {
+        Route::get('/',       [App\Http\Controllers\Apps\LaporanController::class, 'index'])->name('index');
+        Route::get('/export', [App\Http\Controllers\Apps\LaporanController::class, 'export'])->name('export');
     });
 
     // Organisasi
@@ -77,6 +94,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/organisasi/{id}/anggota/{anggotaId}', [App\Http\Controllers\Apps\OrganisasiController::class, 'anggotaDestroy'])->name('Organisasi.anggota.destroy');
 
     // Guru
+    Route::post('/guru/import', [App\Http\Controllers\Admin\GuruController::class, 'import'])->name('Guru.import');
     Route::get('/guru',         [App\Http\Controllers\Admin\GuruController::class, 'index'])->name('Guru.index');
     Route::get('/guru/add',     [App\Http\Controllers\Admin\GuruController::class, 'create'])->name('Guru.create');
     Route::post('/guru/add',    [App\Http\Controllers\Admin\GuruController::class, 'store'])->name('Guru.store');
@@ -85,6 +103,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/guru/{id}', [App\Http\Controllers\Admin\GuruController::class, 'destroy'])->name('Guru.destroy');
 
     // Siswa
+    Route::post('/siswa/import', [App\Http\Controllers\Admin\SiswaController::class, 'import'])->name('Siswa.import');
     Route::get('/siswa',         [App\Http\Controllers\Admin\SiswaController::class, 'index'])->name('Siswa.index');
     Route::get('/siswa/add',     [App\Http\Controllers\Admin\SiswaController::class, 'create'])->name('Siswa.create');
     Route::post('/siswa/add',    [App\Http\Controllers\Admin\SiswaController::class, 'store'])->name('Siswa.store');
@@ -92,7 +111,16 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/siswa/{id}',    [App\Http\Controllers\Admin\SiswaController::class, 'update'])->name('Siswa.update');
     Route::delete('/siswa/{id}', [App\Http\Controllers\Admin\SiswaController::class, 'destroy'])->name('Siswa.destroy');
 
+    // Daftar Tamu
+    Route::get('/daftartamu',           [App\Http\Controllers\Apps\DaftarTamuController::class, 'index'])->name('DaftarTamu.index');
+    Route::get('/daftartamu/add',       [App\Http\Controllers\Apps\DaftarTamuController::class, 'create'])->name('DaftarTamu.create');
+    Route::post('/daftartamu/add',      [App\Http\Controllers\Apps\DaftarTamuController::class, 'store'])->name('DaftarTamu.store');
+    Route::get('/daftartamu/{id}/edit', [App\Http\Controllers\Apps\DaftarTamuController::class, 'edit'])->name('DaftarTamu.edit');
+    Route::put('/daftartamu/{id}',      [App\Http\Controllers\Apps\DaftarTamuController::class, 'update'])->name('DaftarTamu.update');
+    Route::delete('/daftartamu/{id}',   [App\Http\Controllers\Apps\DaftarTamuController::class, 'destroy'])->name('DaftarTamu.destroy');
+
     // Staff
+    Route::post('/staff/import', [App\Http\Controllers\Admin\StaffController::class, 'import'])->name('Staff.import');
     Route::get('/staff',              [App\Http\Controllers\Admin\StaffController::class, 'index'])->name('Staff.index');
     Route::get('/staff/add',          [App\Http\Controllers\Admin\StaffController::class, 'create'])->name('Staff.create');
     Route::post('/staff/add',         [App\Http\Controllers\Admin\StaffController::class, 'store'])->name('Staff.store');

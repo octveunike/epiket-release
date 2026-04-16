@@ -9,26 +9,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     /* ===================== DATATABLES ===================== */
-    const dtTable = document.querySelector('.dt-table');
-    if (dtTable && typeof DataTable !== 'undefined') {
+    document.querySelectorAll('.dt-table').forEach(function(dtTable) {
+        if (typeof DataTable === 'undefined') return;
         new DataTable('#' + dtTable.id, {
             language: {
                 search:       'Cari:',
                 lengthMenu:   'Tampilkan _MENU_ data',
                 info:         'Menampilkan _START_–_END_ dari _TOTAL_ data',
                 infoEmpty:    'Menampilkan 0 data',
+                emptyTable: 'Belum ada data tersedia',
                 infoFiltered: '(difilter dari _MAX_ total data)',
                 zeroRecords:  'Tidak ada data yang ditemukan',
-                paginate: { first: '«', last: '»', next: '›', previous: '‹' },
+                paginate: { next: '›', previous: '‹' },
             },
             pageLength: 10,
             lengthMenu: [10, 25, 50, 100],
+            pagingType: 'simple_numbers',
             columnDefs: [
-                { orderable: false, targets: -1 }, // kolom Aksi tidak bisa disort
+                { orderable: false, className: 'dt-center', targets: 0  }, // kolom No
+                { orderable: false, className: 'dt-center', targets: -1 }, // kolom Aksi
             ],
             order: [], // ikuti urutan asli dari server
         });
-    }
+    });
 
     /* ===================== DELETE MODAL ===================== */
     const deleteModal = document.getElementById('deleteModal');

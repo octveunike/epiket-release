@@ -7,7 +7,7 @@
         <div class="breadcrumb">Admin / <span class="breadcrumb-link">Dispensasi</span></div>
         <h2>Data Dispensasi</h2>
     </div>
-    @if(auth()->user()->hasRole(['Admin', 'Siswa', 'Ketua Kelas']))
+    @if(auth()->user()->hasRole(['Admin', 'Siswa', 'Ketua Kelas', 'Petugas Piket']))
     <a href="{{ route('Dispensasi.create') }}" class="btn btn-primary">
         <i class="ri-add-line"></i> Ajukan Dispensasi
     </a>
@@ -29,11 +29,11 @@
     <form method="GET" action="{{ route('Dispensasi.index') }}" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
         <div class="form-group" style="margin-bottom:0;min-width:160px;">
             <label class="form-label">Dari Tanggal</label>
-            <input type="date" name="dari" class="form-control" value="{{ request('dari') }}">
+            <input type="date" name="dari" class="form-control" value="{{ request('dari', $dari) }}">
         </div>
         <div class="form-group" style="margin-bottom:0;min-width:160px;">
             <label class="form-label">Sampai Tanggal</label>
-            <input type="date" name="sampai" class="form-control" value="{{ request('sampai') }}">
+            <input type="date" name="sampai" class="form-control" value="{{ request('sampai', $sampai) }}">
         </div>
         <div class="form-group" style="margin-bottom:0;min-width:180px;">
             <label class="form-label">Organisasi</label>
@@ -101,7 +101,6 @@
                             </span>
                         </td>
                         <td class="col-center">
-                            {{-- Admin: semua aksi (verifikasi + detail + hapus) --}}
                             @if(auth()->user()->hasRole(['Admin']))
                                 @if($d->status_verifikasi_id !== $statusDisetujuiId && $d->details_count > 0)
                                     <button type="button" class="btn btn-sm btn-success"
@@ -117,7 +116,6 @@
                                     <i class="ri-delete-bin-line"></i> Hapus
                                 </button>
 
-                            {{-- Petugas Piket: verifikasi + detail --}}
                             @elseif(auth()->user()->hasRole(['Petugas Piket']))
                                 @if($d->status_verifikasi_id !== $statusDisetujuiId && $d->details_count > 0)
                                     <button type="button" class="btn btn-sm btn-success"
@@ -129,7 +127,6 @@
                                     <i class="ri-eye-line"></i> Detail
                                 </a>
 
-                            {{-- Siswa & Ketua Kelas: detail saja --}}
                             @elseif(auth()->user()->hasRole(['Siswa', 'Ketua Kelas']))
                                 <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-primary">
                                     <i class="ri-eye-line"></i> Detail

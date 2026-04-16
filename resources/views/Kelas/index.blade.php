@@ -4,7 +4,7 @@
 
     <div class="page-header">
         <div>
-            <div class="breadcrumb">Admin / Master Data / <a href="{{ route('Kelas.index') }}" style="color:var(--primary);">Data Kelas</a></div>
+            <div class="breadcrumb">Admin / Master Data / <a href="{{ route('Kelas.index') }}" class="breadcrumb-link">Data Kelas</a></div>
             <h2>Data Kelas</h2>
         </div>
         <a href="{{ route('Kelas.create') }}" class="btn btn-primary">
@@ -26,64 +26,63 @@
     @endif
 
     <div class="card">
-        <div class="table-responsive">
-            <table>
-                <thead>
+        <table id="tableKelas" class="dt-table"
+            data-destroy-url="{{ route('Kelas.destroy', '') }}">
+            <thead>
+                <tr>
+                    <th style="text-align:center; width:5%;">No</th>
+                    <th>Nama Kelas</th>
+                    <th>Wali Kelas</th>
+                    <th>Ketua Kelas</th>
+                    <th>Periode Akademik</th>
+                    <th style="text-align:center;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($data as $val)
                     <tr>
-                        <th style="width:5%; text-align:center;">No</th>
-                        <th>Nama Kelas</th>
-                        <th>Wali Kelas</th>
-                        <th>Ketua Kelas</th>
-                        <th>Periode Akademik</th>
-                        <th style="text-align:center;">Aksi</th>
+                        <td style="text-align:center;">{{ $loop->iteration }}</td>
+                        <td><strong>{{ $val->nama_kelas }}</strong></td>
+                        <td>
+                            @if ($val->waliKelas)
+                                {{ $val->waliKelas->nama_guru }}
+                            @else
+                                <span class="text-italic-muted">Belum ditentukan</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if ($val->ketuaKelas)
+                                {{ $val->ketuaKelas->nama_siswa }}
+                            @else
+                                <span class="text-italic-muted">Belum ditentukan</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if ($val->periodeAkademik)
+                                {{ $val->periodeAkademik->nama_periode }}
+                            @else
+                                <span class="text-italic-muted">-</span>
+                            @endif
+                        </td>
+                        <td style="text-align:center; white-space:nowrap;">
+                            <a href="{{ route('Kelas.edit', $val->id) }}" class="btn btn-sm btn-primary">
+                                <i class="ri-edit-2-line"></i> Edit
+                            </a>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="showDeleteModal({{ $val->id }})">
+                                <i class="ri-delete-bin-line"></i> Hapus
+                            </button>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    @forelse ($data as $val)
-                        <tr>
-                            <td style="text-align:center;">{{ $loop->iteration }}</td>
-                            <td><strong>{{ $val->nama_kelas }}</strong></td>
-                            <td>
-                                @if ($val->waliKelas)
-                                    {{ $val->waliKelas->nama_guru }}
-                                @else
-                                    <span style="color:var(--text-muted); font-style:italic;">Belum ditentukan</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if ($val->ketuaKelas)
-                                    {{ $val->ketuaKelas->nama_siswa }}
-                                @else
-                                    <span style="color:var(--text-muted); font-style:italic;">Belum ditentukan</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if ($val->periodeAkademik)
-                                    {{ $val->periodeAkademik->nama_periode }}
-                                @else
-                                    <span style="color:var(--text-muted); font-style:italic;">-</span>
-                                @endif
-                            </td>
-                            <td style="text-align:center;">
-                                <a href="{{ route('Kelas.edit', $val->id) }}" class="btn btn-sm btn-primary">
-                                    <i class="ri-edit-2-line"></i> Edit
-                                </a>
-                                <button type="button" class="btn btn-sm btn-danger" onclick="showDeleteModal({{ $val->id }})">
-                                    <i class="ri-delete-bin-line"></i> Hapus
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" style="text-align:center; color:var(--text-muted); padding:32px;">
-                                <i class="ri-inbox-line" style="font-size:32px; display:block; margin-bottom:8px;"></i>
-                                Belum ada data kelas
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                @empty
+                    <tr>
+                        <td colspan="6" class="td-empty">
+                            <i class="ri-inbox-line" style="font-size:32px;display:block;margin-bottom:8px;"></i>
+                            Belum ada data kelas
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
     <div class="confirm-overlay" id="deleteModal">

@@ -24,16 +24,31 @@
         @csrf
 
         <div class="form-grid">
+
+            <div class="form-group form-full">
+                <label class="form-label">Nama Kegiatan <span class="required">*</span></label>
+                <input type="text" name="kegiatan" class="form-control"
+                    placeholder="Mis: Pembuatan KTP / Lomba Paskibra"
+                    value="{{ old('kegiatan') }}" required>
+                @error('kegiatan')<small style="color:#ef4444;">{{ $message }}</small>@enderror
+            </div>
+
             <div class="form-group">
-                <label class="form-label">Organisasi <span class="required">*</span></label>
-                <select name="organisasi_id" class="form-control" required>
-                    <option value="">-- Pilih Organisasi --</option>
+                <label class="form-label">
+                    Organisasi 
+                    <span style="color:var(--text-muted);font-weight:400;">(opsional)</span>
+                </label>
+                <select name="organisasi_id" class="form-control">
+                    <option value="">-- Tidak Ada / Pribadi --</option>
                     @foreach ($organisasi as $org)
                         <option value="{{ $org->id }}" {{ old('organisasi_id') == $org->id ? 'selected' : '' }}>
                             {{ $org->nama_organisasi }}
                         </option>
                     @endforeach
                 </select>
+                <small style="color:var(--text-muted);margin-top:4px;display:block;">
+                    Kosongkan jika bukan kegiatan organisasi.
+                </small>
                 @error('organisasi_id')<small style="color:#ef4444;">{{ $message }}</small>@enderror
             </div>
 
@@ -65,15 +80,10 @@
             </div>
 
             <div class="form-group form-full">
-                <label class="form-label">Nama Kegiatan <span class="required">*</span></label>
-                <input type="text" name="kegiatan" class="form-control"
-                    placeholder="Mis: Lomba Paskibra Tingkat Kabupaten"
-                    value="{{ old('kegiatan') }}" required>
-                @error('kegiatan')<small style="color:#ef4444;">{{ $message }}</small>@enderror
-            </div>
-
-            <div class="form-group form-full">
-                <label class="form-label">Lampiran <span style="color:var(--text-muted);font-weight:400;">(opsional)</span></label>
+                <label class="form-label">
+                    Lampiran 
+                    <span style="color:var(--text-muted);font-weight:400;">(opsional)</span>
+                </label>
                 <input type="file" name="lampiran_dispensasi" class="form-control"
                     accept=".pdf,.jpg,.jpeg,.png">
                 <small style="color:var(--text-muted);margin-top:4px;display:block;">
@@ -81,6 +91,7 @@
                 </small>
                 @error('lampiran_dispensasi')<small style="color:#ef4444;">{{ $message }}</small>@enderror
             </div>
+
         </div>
 
         <div class="form-actions">

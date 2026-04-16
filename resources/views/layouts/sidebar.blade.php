@@ -47,12 +47,32 @@
                 </li>
                 @endif
 
-                {{-- Absensi: semua role --}}
+                {{-- Data Absensi: Ketua Kelas, Petugas Piket, Admin --}}
+                @if(auth()->user()->hasRole(['Ketua Kelas','Admin','Petugas Piket']))
                 <li>
-                    <a href="{{ route('Absensi.index') }}" class="{{ request()->routeIs('Absensi.*') ? 'active' : '' }}">
+                    <a href="{{ route('Absensi.index') }}" class="{{ request()->routeIs('Absensi.index') || request()->routeIs('Absensi.create') || request()->routeIs('Absensi.show') || request()->routeIs('Absensi.isiAbsensi') ? 'active' : '' }}">
                         <i class="ri-calendar-check-line"></i><span>Data Absensi</span>
                     </a>
                 </li>
+                @endif
+
+                {{-- Validasi Absensi: Wali Kelas saja --}}
+                @if(auth()->user()->hasRole('Wali Kelas'))
+                <li>
+                    <a href="{{ route('Absensi.walikelas.index') }}" class="{{ request()->routeIs('Absensi.walikelas.*') ? 'active' : '' }}">
+                        <i class="ri-checkbox-circle-line"></i><span>Validasi Absensi</span>
+                    </a>
+                </li>
+                @endif
+
+                {{-- Laporan Absensi: Wali Kelas, Petugas Piket, Admin --}}
+                @if(auth()->user()->hasRole(['Wali Kelas', 'Admin','Petugas Piket']))
+                <li>
+                    <a href="{{ route('Laporan.index') }}" class="{{ request()->routeIs('Laporan.index') || request()->routeIs('Laporan.create') || request()->routeIs('Absensi.show') || request()->routeIs('Absensi.isiAbsensi') ? 'active' : '' }}">
+                        <i class="ri-calendar-check-line"></i><span>Buat Laporan</span>
+                    </a>
+                </li>
+                @endif
 
                 {{-- Keterlambatan: semua role --}}
                 <li>
@@ -75,11 +95,19 @@
                     </a>
                 </li>
 
+                {{-- Daftar Tamu: Admin & Petugas Piket --}}
+                @if(auth()->user()->hasRole(['Admin','Petugas Piket']))
+                <li>
+                    <a href="{{ route('DaftarTamu.index') }}" class="{{ request()->routeIs('DaftarTamu.*') ? 'active' : '' }}">
+                        <i class="ri-calendar-2-line"></i><span>Daftar Tamu</span>
+                    </a>
+                </li>
+                @endif
+
             </ul>
         </div>
 
         {{-- ======== ADMIN ======== --}}
-        {{-- Admin & Petugas Piket --}}
         @if(auth()->user()->hasRole(['Admin','Petugas Piket']))
         <div class="sidebar-group active">
             <div class="sidebar-group-header sidebar-group-label">
@@ -107,7 +135,6 @@
         @endif
 
         {{-- ======== USER MANAGEMENT ======== --}}
-        {{-- Admin & Petugas Piket --}}
         @if(auth()->user()->hasRole(['Admin','Petugas Piket']))
         <div class="sidebar-group active">
             <div class="sidebar-group-header sidebar-group-label">
@@ -125,7 +152,6 @@
         @endif
 
         {{-- ======== PENGATURAN ======== --}}
-        {{-- Semua role --}}
         <div class="sidebar-group active">
             <div class="sidebar-group-header sidebar-group-label">
                 <span>PENGATURAN</span>

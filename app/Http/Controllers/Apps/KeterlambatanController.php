@@ -17,20 +17,20 @@ class KeterlambatanController extends Controller
 {
     public function index(Request $request)
     {
+        $dari   = $request->dari ?? now()->subDays(7)->toDateString();
+        $sampai = $request->sampai ?? now()->toDateString();
+
         $query = Keterlambatan::with(['siswa', 'absensi.kelas', 'periodeAkademik'])
             ->where('status', 1)
             ->orderByDesc('waktu_masuk');
 
-        if ($request->filled('tanggal')) {
-            $query->whereHas('absensi', function ($q) use ($request) {
-                $q->whereDate('tanggal', $request->tanggal);
-            });
-        } else {
-            $query->whereHas('absensi', function ($q) {
-                $q->whereDate('tanggal', today());
-            });
-        }
+        // Filter range tanggal (berdasarkan tanggal absensi)
+        $query->whereHas('absensi', function ($q) use ($dari, $sampai) {
+            $q->whereDate('tanggal', '>=', $dari)
+            ->whereDate('tanggal', '<=', $sampai);
+        });
 
+        // Filter kelas
         if ($request->filled('kelas_id')) {
             $query->whereHas('absensi', function ($q) use ($request) {
                 $q->where('kelas_id', $request->kelas_id);
@@ -39,9 +39,13 @@ class KeterlambatanController extends Controller
 
         $keterlambatan = $query->paginate(25);
         $kelas         = Kelas::where('status', 1)->orderBy('nama_kelas')->get();
-        $tanggal       = $request->tanggal ?? today()->format('Y-m-d');
 
-        return view('Keterlambatan.index', compact('keterlambatan', 'kelas', 'tanggal'));
+        return view('Keterlambatan.index', compact(
+            'keterlambatan',
+            'kelas',
+            'dari',
+            'sampai'
+        ));
     }
 
     public function create(Request $request)
@@ -51,11 +55,12 @@ class KeterlambatanController extends Controller
         $siswa         = collect();
         $sudahTercatat = collect();
 
-        if ($request->filled('kelas_id')) {
-            $absensi = Absensi::with('kelas', 'periodeAkademik')
+        if ($request->filled('kelas_id') && $request->filled('tanggal')) {
+            // Cari absensi berdasarkan kelas_id + tanggal yang dipilih
+            $absensi = Absensi::with(['kelas', 'periodeAkademik'])
                 ->where('kelas_id', $request->kelas_id)
                 ->where('status', 1)
-                ->whereDate('tanggal', today())
+                ->whereDate('tanggal', $request->tanggal)
                 ->first();
 
             if ($absensi) {
@@ -93,14 +98,13 @@ class KeterlambatanController extends Controller
             $absensi = Absensi::findOrFail($request->absensi_id);
 
             DB::transaction(function () use ($request, $absensi) {
-
                 AbsensiDetail::updateOrCreate(
                     [
                         'absensi_id' => $absensi->id,
                         'siswa_id'   => $request->siswa_id,
                     ],
                     [
-                        'status_absensi_id' => 5,
+                        'status_absensi_id' => 5, // Terlambat
                         'is_full_day'       => 1,
                         'keterangan'        => $request->alasan,
                         'status'            => '1',
@@ -112,7 +116,8 @@ class KeterlambatanController extends Controller
                 Keterlambatan::create([
                     'absensi_id'          => $absensi->id,
                     'siswa_id'            => $request->siswa_id,
-                    'waktu_masuk'         => Carbon::createFromFormat('H:i', $request->waktu_masuk)->setDateFrom(now()),
+                    'waktu_masuk'         => Carbon::parse($absensi->tanggal)->format('Y-m-d')
+                                            . ' ' . $request->waktu_masuk . ':00',
                     'alasan'              => $request->alasan,
                     'periode_akademik_id' => $absensi->periode_akademik_id,
                     'status'              => '1',
@@ -121,8 +126,10 @@ class KeterlambatanController extends Controller
                 ]);
             });
 
-            return redirect()->route('Keterlambatan.create', ['kelas_id' => $absensi->kelas_id])
-                ->with('success', 'Keterlambatan berhasil dicatat.');
+            return redirect()->route('Keterlambatan.create', [
+                'kelas_id' => $request->kelas_id,
+                'tanggal'  => $request->tanggal,
+            ])->with('success', 'Keterlambatan berhasil dicatat.');
 
         } catch (Exception $e) {
             return redirect()->back()
