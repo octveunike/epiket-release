@@ -9,30 +9,45 @@ class KelasSeeder extends Seeder
 {
     public function run(): void
     {
-        $kelas = [];
+        $data = [];
+        $id = 1;
 
-        // X IPA 1 - 7
-        for ($i = 1; $i <= 7; $i++) {
-            $kelas[] = [
-                'nama_kelas' => "X IPA $i",
-                'wali_kelas_id' => $i, // nanti mapping ke guru id
-                'ketua_kelas_id' => $i,
+        // Kelas X 1 - 10
+        for ($i = 1; $i <= 10; $i++) {
+            $data[] = [
+                'id' => $id++,
+                'nama_kelas' => 'X ' . $i,
+                'wali_kelas_id' => null,
+                'ketua_kelas_id' => null,
                 'periode_akademik_id' => 1,
                 'status' => 1,
             ];
         }
 
-        // X IPS 1 - 3
-        for ($i = 1; $i <= 3; $i++) {
-            $kelas[] = [
-                'nama_kelas' => "X IPS $i",
-                'wali_kelas_id' => $i + 7, // lanjut dari IPA
-                'ketua_kelas_id' => $i,
+        // Kelas XI 1 - 10
+        for ($i = 1; $i <= 10; $i++) {
+            $data[] = [
+                'id' => $id++,
+                'nama_kelas' => 'XI ' . $i,
+                'wali_kelas_id' => null,
+                'ketua_kelas_id' => null,
                 'periode_akademik_id' => 1,
                 'status' => 1,
             ];
         }
 
-        DB::table('kelas')->insert($kelas);
+        // Kelas XII 1 - 10
+        for ($i = 1; $i <= 10; $i++) {
+            $data[] = [
+                'id' => $id++,
+                'nama_kelas' => 'XII ' . $i,
+                'wali_kelas_id' => null,
+                'ketua_kelas_id' => null,
+                'periode_akademik_id' => 1,
+                'status' => 1,
+            ];
+        }
+
+        DB::table('kelas')->insert($data);
     }
 }

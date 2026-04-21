@@ -28,7 +28,7 @@
                     <select name="periode_akademik_id" class="form-control">
                         <option value="">-- Pilih Periode --</option>
                         @foreach ($periode as $p)
-                            <option value="{{ $p->id }}" {{ old('periode_akademik_id') == $p->id ? 'selected' : '' }}>
+                            <option value="{{ $p->id }}" {{ old('periode_akademik_id', optional($periode->first())->id) == $p->id ? 'selected' : '' }}>
                                 {{ $p->nama_periode }}
                             </option>
                         @endforeach

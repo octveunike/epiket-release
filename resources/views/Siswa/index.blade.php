@@ -32,24 +32,23 @@
     @endif
 
     <div class="card">
-        <table id="tableSiswa" class="dt-table"
-            data-destroy-url="{{ route('Siswa.destroy', '') }}">
+        <table id="tableSiswa" class="dt-table">
             <thead>
                 <tr>
-                    <th>No</th>
+                    <th class="col-no" style="width:5%;">No</th>
                     <th>NIS</th>
                     <th>Nama Siswa</th>
                     <th>Jenis Kelamin</th>
                     <th>Tanggal Masuk</th>
                     <th>Kelas</th>
                     <th>Status</th>
-                    <th class="dt-nosort">Aksi</th>
+                    <th class="col-center">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($data as $val)
                     <tr>
-                        <td>{{ $loop->iteration }}</td>
+                        <td class="col-no">{{ $loop->iteration }}</td>
                         <td>{{ $val->nis }}</td>
                         <td>{{ $val->nama_siswa }}</td>
                         <td>{{ $val->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
@@ -66,7 +65,7 @@
                                 <span class="badge badge-danger">Non-Aktif</span>
                             @endif
                         </td>
-                        <td style="white-space:nowrap;">
+                        <td class="col-center" style="white-space:nowrap;">
                             <a href="{{ route('Siswa.edit', $val->id) }}" class="btn btn-sm btn-primary">
                                 <i class="ri-edit-2-line"></i> Edit
                             </a>
@@ -76,41 +75,24 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="8" class="td-empty">
-                            <i class="ri-inbox-line" style="font-size:32px;display:block;margin-bottom:8px;"></i>
-                            Belum ada data siswa
-                        </td>
-                    </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 
     {{-- Delete Modal --}}
-    <div class="modal-overlay" id="deleteModal">
-        <div class="modal-box">
-            <div class="modal-header">
-                <span class="modal-title">Konfirmasi Hapus</span>
-                <button class="modal-close" onclick="closeDeleteModal()"><i class="ri-close-line"></i></button>
-            </div>
-            <div class="modal-body">
-                <div class="modal-icon danger"><i class="ri-error-warning-line"></i></div>
-                <p class="modal-confirm-text">
-                    Hapus data siswa ini?<br>
-                    <small class="text-danger-sm">Data yang dihapus tidak dapat dikembalikan.</small>
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Batal</button>
-                <form id="delete-form" method="POST"
-                    data-base-url="{{ route('Siswa.destroy', '') }}"
-                    style="display:inline;">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="btn btn-danger">
-                        <i class="ri-delete-bin-line"></i> Hapus
-                    </button>
+    <div class="confirm-overlay" id="deleteModal">
+        <div class="confirm-box">
+            <div class="confirm-icon">!</div>
+            <h3>Hapus Siswa?</h3>
+            <p>Data yang dihapus tidak dapat dikembalikan.</p>
+            <div class="confirm-actions">
+                <form id="delete-form" method="POST">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">Ya, Hapus</button>
                 </form>
+                <button onclick="closeDeleteModal()" class="btn btn-secondary">Batal</button>
             </div>
         </div>
     </div>
@@ -118,7 +100,6 @@
     {{-- Import Modal --}}
     <div class="modal-overlay" id="importModal">
         <div class="modal-box">
-
             <div class="modal-header">
                 <span class="modal-title">
                     <i class="ri-upload-2-line"></i> Import Data Siswa
@@ -127,22 +108,17 @@
                     <i class="ri-close-line"></i>
                 </button>
             </div>
-
             <form action="{{ route('Siswa.import') }}" method="POST" enctype="multipart/form-data">
                 @csrf
-
                 <div class="modal-body">
-
                     <p style="font-size:13.5px; color:var(--text-muted); margin-bottom:16px;">
                         Download template terlebih dahulu:
                         <a href="{{ asset('template/siswa_template.xlsx') }}" download style="color:var(--primary); font-weight:600;">
                             <i class="ri-download-line"></i> Download Template
                         </a>
                     </p>
-
                     <div class="form-group">
                         <label class="form-label">Pilih File Excel <span class="required">*</span></label>
-
                         <label for="importFile" class="file-input-wrapper" style="cursor:pointer;">
                             <span class="file-input-label" style="background:#e2e8f0; color:#475569;">
                                 <i class="ri-file-excel-2-line"></i> Pilih File
@@ -150,26 +126,17 @@
                             <span class="file-input-filename" id="importFileFilename" style="color:#475569;">
                                 Belum ada file dipilih
                             </span>
-                            <input type="file"
-                                   id="importFile"
-                                   name="file"
-                                   class="file-input-hidden"
-                                   accept=".xlsx,.xls,.csv"
-                                   required>
+                            <input type="file" id="importFile" name="file" class="file-input-hidden"
+                                accept=".xlsx,.xls,.csv" required>
                         </label>
                     </div>
-
                 </div>
-
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeImportModal()">
-                        Batal
-                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeImportModal()">Batal</button>
                     <button type="submit" class="btn btn-success">
                         <i class="ri-upload-2-line"></i> Upload
                     </button>
                 </div>
-
             </form>
         </div>
     </div>
@@ -198,7 +165,6 @@
     function closeImportModal() {
         document.getElementById('importModal').classList.remove('active');
         document.getElementById('importFile').value = '';
-
         const filename = document.getElementById('importFileFilename');
         filename.textContent = 'Belum ada file dipilih';
         filename.classList.remove('has-file');
@@ -211,12 +177,8 @@
     document.getElementById('importFile').addEventListener('change', function(e) {
         const fileName = e.target.files[0]?.name || 'Belum ada file dipilih';
         const label = document.getElementById('importFileFilename');
-
         label.textContent = fileName;
-
-        if (e.target.files.length > 0) {
-            label.classList.add('has-file');
-        }
+        if (e.target.files.length > 0) label.classList.add('has-file');
     });
 </script>
 @endpush

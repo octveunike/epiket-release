@@ -7,9 +7,11 @@
         <div class="breadcrumb">Admin / <span class="breadcrumb-link">Data Absensi</span></div>
         <h2>Data Absensi</h2>
     </div>
+    @if(auth()->user()->hasRole(['Admin','Petugas Piket']))
     <a href="{{ route('Absensi.create') }}" class="btn btn-primary">
         <i class="ri-add-line"></i> Tambah Absensi
     </a>
+    @endif
 </div>
 
 @if (session('success'))
@@ -30,14 +32,20 @@
         </div>
         <div class="form-group" style="margin-bottom:0;min-width:180px;">
             <label class="form-label">Kelas</label>
-            <select name="kelas_id" class="form-control">
-                <option value="">Semua Kelas</option>
-                @foreach ($kelas as $k)
-                    <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
-                        {{ $k->nama_kelas }}
-                    </option>
-                @endforeach
-            </select>
+            @php $ketuaKelas = auth()->user()->hasRole('Ketua Kelas') ? auth()->user()->ketuaKelas() : null; @endphp
+            @if ($ketuaKelas)
+                <input type="hidden" name="kelas_id" value="{{ $ketuaKelas->id }}">
+                <input type="text" class="form-control" value="{{ $ketuaKelas->nama_kelas }}" readonly tabindex="-1">
+            @else
+                <select name="kelas_id" class="form-control">
+                    <option value="">Semua Kelas</option>
+                    @foreach ($kelas as $k)
+                        <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
+                            {{ $k->nama_kelas }}
+                        </option>
+                    @endforeach
+                </select>
+            @endif
         </div>
         <button type="submit" class="btn btn-primary" style="margin-bottom:0;">
             <i class="ri-filter-line"></i> Filter
@@ -82,13 +90,11 @@
                         </td>
                         <td class="col-center">
                             @if (!$sudahDiisi)
-                                {{-- Belum diisi → Isi Absensi --}}
                                 <a href="{{ route('Absensi.isiAbsensi', $absensi->id) }}"
                                     class="btn btn-sm btn-primary">
                                     <i class="ri-edit-line"></i> Isi Absensi
                                 </a>
                             @elseif (!$disetujui)
-                                {{-- Sudah diisi tapi belum final → Edit + Hapus saja --}}
                                 <a href="{{ route('Absensi.isiAbsensi', $absensi->id) }}"
                                     class="btn btn-sm btn-primary">
                                     <i class="ri-edit-line"></i> Edit
@@ -98,10 +104,9 @@
                                     <i class="ri-delete-bin-line"></i> Hapus
                                 </button>
                             @else
-                                {{-- Sudah disetujui → Detail saja --}}
                                 <a href="{{ route('Absensi.show', $absensi->id) }}"
-                                    class="btn btn-sm btn-primary">
-                                    <i class="ri-eye-line"></i> Detail
+                                    class="btn btn-sm btn-info">
+                                    <i class="ri-eye-line"></i> Detail Absensi
                                 </a>
                             @endif
                         </td>

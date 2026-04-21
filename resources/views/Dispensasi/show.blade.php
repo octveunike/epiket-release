@@ -92,10 +92,7 @@
 </div>
 
 {{-- Form Tambah Siswa — sembunyikan kalau sudah diverifikasi --}}
-@if (
-    auth()->user()->hasRole(['Admin','Petugas Piket']) &&
-    $dispensasi->status_verifikasi_id !== $statusDisetujuiId
-)
+@if ($canEditDetail && $dispensasi->status_verifikasi_id !== $statusDisetujuiId)
     <div class="card">
         <div class="card-title"><i class="ri-user-add-line"></i> Tambah Siswa Dispensasi</div>
         <form method="POST" action="{{ route('Dispensasi.storeDetail', $dispensasi->id) }}">
@@ -103,17 +100,28 @@
             <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
                 <div class="form-group" style="margin-bottom:0;flex:2;min-width:180px;">
                     <label class="form-label">Kelas</label>
-                    <select id="kelas-select" class="form-control">
-                        <option value="">-- Pilih Kelas --</option>
-                        @foreach ($kelas as $k)
-                            <option value="{{ $k->id }}">{{ $k->nama_kelas }}</option>
-                        @endforeach
-                    </select>
+                    @if ($ketuaKelas)
+                        <input type="text" class="form-control" value="{{ $ketuaKelas->nama_kelas }}" readonly tabindex="-1">
+                    @else
+                        <select id="kelas-select" class="form-control">
+                            <option value="">-- Pilih Kelas --</option>
+                            @foreach ($kelas as $k)
+                                <option value="{{ $k->id }}">{{ $k->nama_kelas }}</option>
+                            @endforeach
+                        </select>
+                    @endif
                 </div>
                 <div class="form-group" style="margin-bottom:0;flex:3;min-width:180px;">
                     <label class="form-label">Siswa <span class="required">*</span></label>
                     <select name="siswa_id" id="siswa-select" class="form-control" required>
-                        <option value="">-- Pilih Kelas dulu --</option>
+                        @if ($ketuaKelas && isset($siswaPerKelas[$ketuaKelas->id]))
+                            <option value="">-- Pilih Siswa --</option>
+                            @foreach ($siswaPerKelas[$ketuaKelas->id] as $s)
+                                <option value="{{ $s->id }}">{{ $s->nama_siswa }}</option>
+                            @endforeach
+                        @else
+                            <option value="">-- Pilih Kelas dulu --</option>
+                        @endif
                     </select>
                     @error('siswa_id')<small style="color:#ef4444;">{{ $message }}</small>@enderror
                 </div>
@@ -141,10 +149,7 @@
                         <th class="col-no">No</th>
                         <th>Nama Siswa</th>
                         <th>Kelas</th>
-                        @if (
-                            auth()->user()->hasRole(['Admin','Petugas Piket']) &&
-                            $dispensasi->status_verifikasi_id !== $statusDisetujuiId
-                        )
+                        @if ($canEditDetail && $dispensasi->status_verifikasi_id !== $statusDisetujuiId)
                             <th class="col-center">Aksi</th>
                         @endif
                     </tr>
@@ -155,10 +160,7 @@
                             <td class="col-no">{{ $loop->iteration }}</td>
                             <td><strong>{{ $detail->siswa->nama_siswa ?? '—' }}</strong></td>
                             <td>{{ $detail->siswa->kelas->nama_kelas ?? '—' }}</td>
-                            @if (
-                                auth()->user()->hasRole(['Admin','Petugas Piket']) &&
-                                $dispensasi->status_verifikasi_id !== $statusDisetujuiId
-                            )
+                            @if ($canEditDetail && $dispensasi->status_verifikasi_id !== $statusDisetujuiId)
                                 <td class="col-center">
                                     <button type="button" class="btn btn-sm btn-danger"
                                         onclick="showDeleteModal({{ $detail->id }})">

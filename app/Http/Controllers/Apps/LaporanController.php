@@ -18,10 +18,27 @@ class LaporanController extends Controller
 {
     public function index(Request $request)
     {
-        $kelasList = Kelas::where('status', 1)->orderBy('nama_kelas')->get();
-        $rows      = $this->buildRows($request);
+        $lockedKelasId = $this->lockedKelasIdForUser();
+
+        $kelasList = $lockedKelasId
+            ? Kelas::where('status', 1)->where('id', $lockedKelasId)->get()
+            : Kelas::where('status', 1)->orderBy('nama_kelas')->get();
+
+        $rows = $this->buildRows($request);
 
         return view('Laporan.index', compact('kelasList', 'rows'));
+    }
+
+    private function lockedKelasIdForUser(): ?int
+    {
+        $user = auth()->user();
+        if ($user->hasRole('Ketua Kelas')) {
+            return $user->ketuaKelasId();
+        }
+        if ($user->hasRole('Wali Kelas')) {
+            return $user->waliKelasId();
+        }
+        return null;
     }
 
     public function export(Request $request)
@@ -40,6 +57,13 @@ class LaporanController extends Controller
         $kategori = $request->kategori;
         $nama     = $request->nama;
 
+        $lockedKelasId = $this->lockedKelasIdForUser();
+        if ($lockedKelasId !== null) {
+            $kelasId = $lockedKelasId;
+        } elseif (auth()->user()->hasRole(['Ketua Kelas', 'Wali Kelas'])) {
+            return [];
+        }
+
         $rows = [];
 
         // 1. Absensi per siswa (hanya yang Disetujui)
@@ -47,6 +71,7 @@ class LaporanController extends Controller
             $query = AbsensiDetail::with(['absensi.kelas', 'siswa', 'statusAbsensi'])
                 ->where('status', 1)
                 ->whereNotNull('status_absensi_id')
+                ->where('status_absensi_id', '!=', 4) // Dispen sudah dilaporkan lewat kategori Dispensasi
                 ->whereHas('absensi', function ($q) use ($dari, $sampai, $kelasId) {
                     $q->where('status', 1)->where('status_verifikasi_id', 5);
                     if ($dari)    $q->whereDate('tanggal', '>=', $dari);
@@ -66,7 +91,7 @@ class LaporanController extends Controller
                     'nama_siswa'   => $detail->siswa->nama_siswa ?? '—',
                     'kelas'        => $detail->absensi->kelas->nama_kelas ?? '—',
                     'kategori'     => 'Absensi',
-                    'deskripsi'    => $detail->statusAbsensi->nama_status ?? '—',
+                    'deskripsi'    => $detail->statusAbsensi->keterangan ?? '—',
                     'keterangan'   => $detail->keterangan ?? '—',
                     'penginput'    => $user->nama ?? '—',
                 ];

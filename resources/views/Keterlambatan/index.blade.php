@@ -61,23 +61,24 @@
 
 <div class="card">
     <div class="table-responsive">
-        <table>
+        <table id="tableKeterlambatan" class="dt-table"
+            data-destroy-url="{{ route('Keterlambatan.destroy', '') }}">
             <thead>
                 <tr>
-                    <th class="col-no">No</th>
-                    <th>Tanggal</th>
-                    <th>Nama Siswa</th>
-                    <th>Kelas</th>
-                    <th class="col-center">Waktu Masuk</th>
-                    <th>Alasan</th>
-                    <th>Periode</th>
-                    <th class="col-center">Aksi</th>
+                    <th style="text-align:center; width:5%;">No</th>
+                    <th style="text-align:center;">Tanggal</th>
+                    <th style="text-align:center;">Nama Siswa</th>
+                    <th style="text-align:center;">Kelas</th>
+                    <th style="text-align:center;">Waktu Masuk</th>
+                    <th style="text-align:center;">Alasan</th>
+                    <th style="text-align:center;">Periode</th>
+                    <th style="text-align:center;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse ($keterlambatan as $kt)
+                @foreach ($keterlambatan as $kt)
                     <tr>
-                        <td class="col-no">{{ $keterlambatan->firstItem() + $loop->index }}</td>
+                        <td class="col-no">{{ $loop->iteration }}</td>
                         <td>
                             <strong>{{ \Carbon\Carbon::parse($kt->absensi->tanggal)->translatedFormat('d F Y') }}</strong>
                             <div class="text-muted-sm">{{ \Carbon\Carbon::parse($kt->absensi->tanggal)->translatedFormat('l') }}</div>
@@ -96,23 +97,10 @@
                             </button>
                         </td>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="8" class="td-empty">
-                            <i class="ri-time-line" style="font-size:32px;display:block;margin-bottom:8px;"></i>
-                            Tidak ada keterlambatan pada rentang tanggal ini.
-                        </td>
-                    </tr>
-                @endforelse
+                @endforeach
             </tbody>
         </table>
     </div>
-
-    @if ($keterlambatan->hasPages())
-        <div style="padding:12px 16px;">
-            {{ $keterlambatan->withQueryString()->links() }}
-        </div>
-    @endif
 </div>
 
 <div class="modal-overlay" id="deleteModal">

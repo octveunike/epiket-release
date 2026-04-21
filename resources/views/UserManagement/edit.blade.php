@@ -4,8 +4,13 @@
 
     <div class="page-header">
         <div>
-            <div class="breadcrumb">Admin / <a href="{{ route('UserManagement.index') }}" style="color:var(--primary);">User Management</a> / Edit</div>
-            <h2>Edit User</h2>
+            @if ($canEditRole)
+                <div class="breadcrumb">Admin / <a href="{{ route('UserManagement.index') }}" style="color:var(--primary);">User Management</a> / Edit</div>
+                <h2>Edit User</h2>
+            @else
+                <div class="breadcrumb">Profil / Edit</div>
+                <h2>Edit Profil Saya</h2>
+            @endif
         </div>
     </div>
 
@@ -47,7 +52,8 @@
                     @error('email')<small style="color:#ef4444;">{{ $message }}</small>@enderror
                 </div>
 
-                {{-- Role: custom dropdown checklist --}}
+                {{-- Role: custom dropdown checklist (hanya Admin yang boleh mengubah) --}}
+                @if ($canEditRole)
                 <div class="form-group">
                     <label class="form-label">Role</label>
                     <div class="role-dropdown-wrap" id="roleWrap">
@@ -77,6 +83,7 @@
                     </div>
                     @error('role_ids')<small style="color:#ef4444;">{{ $message }}</small>@enderror
                 </div>
+                @endif
 
                 <div class="form-group">
                     <label class="form-label">
@@ -114,7 +121,7 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="ri-save-line"></i> Simpan Perubahan
                 </button>
-                <a href="{{ route('UserManagement.index') }}" class="btn btn-secondary">
+                <a href="{{ $canEditRole ? route('UserManagement.index') : route('admin.index') }}" class="btn btn-secondary">
                     <i class="ri-arrow-left-line"></i> Batal
                 </a>
             </div>
@@ -166,14 +173,16 @@
         const list    = document.getElementById('roleDropdownList');
         const trigger = document.getElementById('roleTrigger');
         const arrow   = document.getElementById('roleArrow');
+        if (!list || !trigger || !arrow) return;
         const isOpen  = list.classList.toggle('open');
         trigger.classList.toggle('open', isOpen);
         arrow.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
     }
 
     function updateRoleTrigger() {
-        const checked     = document.querySelectorAll('input.role-cb:checked');
         const triggerText = document.getElementById('roleTriggerText');
+        if (!triggerText) return;
+        const checked = document.querySelectorAll('input.role-cb:checked');
         if (checked.length === 0) {
             triggerText.textContent = '-- Pilih Role --';
             triggerText.style.color = '#94a3b8';

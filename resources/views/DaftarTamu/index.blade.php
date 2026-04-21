@@ -107,3 +107,20 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+    function showDeleteModal(id) {
+        document.getElementById('delete-form').action = "{{ route('DaftarTamu.destroy', '') }}/" + id;
+        document.getElementById('deleteModal').classList.add('show');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.remove('show');
+    }
+
+    document.getElementById('deleteModal').addEventListener('click', function(e) {
+        if (e.target === this) closeDeleteModal();
+    });
+</script>
+@endpush

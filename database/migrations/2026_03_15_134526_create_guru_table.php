@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('nama_guru')->nullable();
             $table->string('nip')->nullable();
+            $table->string('mata_pelajaran')->nullable();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->tinyInteger('status')->nullable();
             $table->string('user_input', 100)->nullable();

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Apps\Kelas;
 use App\Models\Apps\PeriodeAkademik;
 use App\Models\Reference\StatusVerifikasi;
+use App\Models\User;
 
 class Absensi extends Model
 {
@@ -46,5 +47,10 @@ class Absensi extends Model
     public function details()
     {
         return $this->hasMany(AbsensiDetail::class, 'absensi_id')->where('status', 1);
+    }
+
+    public function userInput()
+    {
+        return $this->belongsTo(User::class, 'user_input', 'id');
     }
 }

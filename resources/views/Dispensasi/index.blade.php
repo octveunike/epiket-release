@@ -57,7 +57,7 @@
 
 <div class="card">
     <div class="table-responsive">
-        <table>
+        <table id="tableDispensasi" class="dt-table" data-destroy-url="{{ route('Dispensasi.destroy', '') }}">
             <thead>
                 <tr>
                     <th class="col-no">No</th>
@@ -71,7 +71,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse ($dispensasi as $d)
+                @foreach ($dispensasi as $d)
                     <tr>
                         <td class="col-no">{{ $loop->iteration }}</td>
                         <td>
@@ -108,7 +108,7 @@
                                         <i class="ri-checkbox-circle-line"></i> Verifikasi
                                     </button>
                                 @endif
-                                <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-primary">
+                                <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-info">
                                     <i class="ri-eye-line"></i> Detail
                                 </a>
                                 <button type="button" class="btn btn-sm btn-danger"
@@ -123,25 +123,18 @@
                                         <i class="ri-checkbox-circle-line"></i> Verifikasi
                                     </button>
                                 @endif
-                                <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-primary">
+                                <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-info">
                                     <i class="ri-eye-line"></i> Detail
                                 </a>
 
                             @elseif(auth()->user()->hasRole(['Siswa', 'Ketua Kelas']))
-                                <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-primary">
+                                <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-info">
                                     <i class="ri-eye-line"></i> Detail
                                 </a>
                             @endif
                         </td>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="8" class="td-empty">
-                            <i class="ri-calendar-event-line" style="font-size:32px;display:block;margin-bottom:8px;"></i>
-                            Belum ada data dispensasi.
-                        </td>
-                    </tr>
-                @endforelse
+                @endforeach
             </tbody>
         </table>
     </div>

@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\DashboardController;
 
 // ── Public routes (tanpa auth) ─────────────────────────────────────────────
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -83,6 +83,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Organisasi
+    Route::post('/organisasi/import',            [App\Http\Controllers\Apps\OrganisasiController::class, 'import'])->name('Organisasi.import');
     Route::get('/organisasi',                    [App\Http\Controllers\Apps\OrganisasiController::class, 'index'])->name('Organisasi.index');
     Route::get('/organisasi/add',                [App\Http\Controllers\Apps\OrganisasiController::class, 'create'])->name('Organisasi.create');
     Route::post('/organisasi/add',               [App\Http\Controllers\Apps\OrganisasiController::class, 'store'])->name('Organisasi.store');
@@ -91,6 +92,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/organisasi/{id}',               [App\Http\Controllers\Apps\OrganisasiController::class, 'update'])->name('Organisasi.update');
     Route::delete('/organisasi/{id}',            [App\Http\Controllers\Apps\OrganisasiController::class, 'destroy'])->name('Organisasi.destroy');
     Route::post('/organisasi/{id}/anggota',               [App\Http\Controllers\Apps\OrganisasiController::class, 'anggotaStore'])->name('Organisasi.anggota.store');
+    Route::post('/organisasi/{id}/anggota/import',        [App\Http\Controllers\Apps\OrganisasiController::class, 'anggotaImport'])->name('Organisasi.anggota.import');
     Route::delete('/organisasi/{id}/anggota/{anggotaId}', [App\Http\Controllers\Apps\OrganisasiController::class, 'anggotaDestroy'])->name('Organisasi.anggota.destroy');
 
     // Guru

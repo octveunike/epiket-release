@@ -7,9 +7,14 @@
             <div class="breadcrumb">Admin / <a href="{{ route('Organisasi.index') }}" class="breadcrumb-link">Data Organisasi</a></div>
             <h2>Data Organisasi</h2>
         </div>
-        <a href="{{ route('Organisasi.create') }}" class="btn btn-primary">
-            <i class="ri-add-line"></i> Tambah Organisasi
-        </a>
+        <div style="display:flex; gap:10px;">
+            <button type="button" class="btn btn-import" onclick="openImportModal()">
+                <i class="ri-upload-2-line"></i> Import Data
+            </button>
+            <a href="{{ route('Organisasi.create') }}" class="btn btn-primary">
+                <i class="ri-add-line"></i> Tambah Organisasi
+            </a>
+        </div>
     </div>
 
     @if (session('success'))
@@ -39,7 +44,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse ($data as $val)
+                @foreach ($data as $val)
                     <tr>
                         <td style="text-align:center;">{{ $loop->iteration }}</td>
                         <td style="font-weight:600; white-space:nowrap;">{{ $val->nama_organisasi }}</td>
@@ -72,14 +77,7 @@
                             </button>
                         </td>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="6" class="td-empty">
-                            <i class="ri-team-line" style="font-size:32px;display:block;margin-bottom:8px;"></i>
-                            Belum ada data organisasi
-                        </td>
-                    </tr>
-                @endforelse
+                @endforeach
             </tbody>
         </table>
     </div>
@@ -100,6 +98,44 @@
         </div>
     </div>
 
+    {{-- Import Modal --}}
+    <div class="modal-overlay" id="importModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span class="modal-title"><i class="ri-upload-2-line"></i> Import Data Organisasi</span>
+                <button class="modal-close" onclick="closeImportModal()"><i class="ri-close-line"></i></button>
+            </div>
+            <form action="{{ route('Organisasi.import') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body">
+                    <p style="font-size:13.5px; color:var(--text-muted); margin-bottom:16px;">
+                        Download template terlebih dahulu:
+                        <a href="{{ asset('template/organisasi_template.xlsx') }}" download style="color:var(--primary); font-weight:600;">
+                            <i class="ri-download-line"></i> Download Template
+                        </a>
+                    </p>
+                    <div class="form-group">
+                        <label class="form-label">Pilih File Excel <span class="required">*</span></label>
+                        <label for="importFile" class="file-input-wrapper" style="cursor:pointer;">
+                            <span class="file-input-label" style="background:#e2e8f0; color:#475569;">
+                                <i class="ri-file-excel-2-line"></i> Pilih File
+                            </span>
+                            <span class="file-input-filename" id="importFileFilename" style="color:#475569;">Belum ada file dipilih</span>
+                            <input type="file" id="importFile" name="file" class="file-input-hidden"
+                                accept=".xlsx,.xls,.csv" required>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeImportModal()">Batal</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="ri-upload-2-line"></i> Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 @endsection
 
 @push('scripts')
@@ -113,6 +149,20 @@
     }
     document.getElementById('deleteModal').addEventListener('click', function(e) {
         if (e.target === this) closeDeleteModal();
+    });
+
+    function openImportModal() {
+        document.getElementById('importModal').classList.add('active');
+    }
+    function closeImportModal() {
+        document.getElementById('importModal').classList.remove('active');
+        document.getElementById('importFile').value = '';
+        const filename = document.getElementById('importFileFilename');
+        filename.textContent = 'Belum ada file dipilih';
+        filename.classList.remove('has-file');
+    }
+    document.getElementById('importModal').addEventListener('click', function(e) {
+        if (e.target === this) closeImportModal();
     });
 </script>
 @endpush

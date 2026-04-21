@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\UserManagement\Roles;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -70,5 +71,71 @@ class User extends Authenticatable
     {
         $roles = is_array($roleName) ? $roleName : [$roleName];
         return $this->roles->whereIn('nama_role', $roles)->isNotEmpty();
+    }
+
+    public function siswa()
+    {
+        return $this->hasOne(\App\Models\Admin\Siswa::class, 'user_id', 'id');
+    }
+
+    public function guru()
+    {
+        return $this->hasOne(\App\Models\Admin\Guru::class, 'user_id', 'id');
+    }
+
+    protected ?object $ketuaKelasCache = null;
+    protected bool $ketuaKelasResolved = false;
+
+    public function ketuaKelas()
+    {
+        if (!$this->hasRole('Ketua Kelas')) {
+            return null;
+        }
+
+        if (!$this->ketuaKelasResolved) {
+            $this->ketuaKelasCache = DB::table('kelas')
+                ->join('siswa as s', 's.id', '=', 'kelas.ketua_kelas_id')
+                ->where('kelas.status', 1)
+                ->where('s.status', 1)
+                ->where('s.user_id', $this->id)
+                ->select('kelas.id', 'kelas.nama_kelas')
+                ->first();
+            $this->ketuaKelasResolved = true;
+        }
+
+        return $this->ketuaKelasCache;
+    }
+
+    public function ketuaKelasId(): ?int
+    {
+        return optional($this->ketuaKelas())->id;
+    }
+
+    protected ?object $waliKelasCache = null;
+    protected bool $waliKelasResolved = false;
+
+    public function waliKelas()
+    {
+        if (!$this->hasRole('Wali Kelas')) {
+            return null;
+        }
+
+        if (!$this->waliKelasResolved) {
+            $this->waliKelasCache = DB::table('kelas')
+                ->join('guru as g', 'g.id', '=', 'kelas.wali_kelas_id')
+                ->where('kelas.status', 1)
+                ->where('g.status', 1)
+                ->where('g.user_id', $this->id)
+                ->select('kelas.id', 'kelas.nama_kelas')
+                ->first();
+            $this->waliKelasResolved = true;
+        }
+
+        return $this->waliKelasCache;
+    }
+
+    public function waliKelasId(): ?int
+    {
+        return optional($this->waliKelas())->id;
     }
 }

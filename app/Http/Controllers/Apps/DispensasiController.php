@@ -22,18 +22,20 @@ class DispensasiController extends Controller
 {
     public function index(Request $request)
     {
-        // Default tanggal: H-7 sampai hari ini
-        $dari   = $request->dari ?? now()->subDays(7)->toDateString();
-        $sampai = $request->sampai ?? now()->toDateString();
+        $dari   = $request->dari;
+        $sampai = $request->sampai;
 
         $query = Dispensasi::with(['organisasi', 'statusVerifikasi'])
             ->withCount('details')
             ->where('status', 1)
             ->orderByDesc('waktu_mulai');
 
-        // Filter range tanggal
-        $query->whereDate('waktu_mulai', '>=', $dari)
-            ->whereDate('waktu_mulai', '<=', $sampai);
+        if ($dari) {
+            $query->whereDate('waktu_mulai', '>=', $dari);
+        }
+        if ($sampai) {
+            $query->whereDate('waktu_mulai', '<=', $sampai);
+        }
 
         // Filter organisasi (opsional)
         if ($request->filled('organisasi_id')) {
@@ -80,13 +82,8 @@ class DispensasiController extends Controller
                 ->store('dispensasi/lampiran', 'public');
         }
 
-        $statusMenunggu = StatusVerifikasi::where('nama_status', 'Menunggu Piket')->where('status', 1)->first();
-        $statusDisetujui = StatusVerifikasi::where('nama_status', 'Disetujui')->where('status', 1)->first();
-
-        $user = auth()->user();
-        $statusId = $user->hasRole('Petugas Piket')
-            ? $statusDisetujui?->id   // auto approve
-            : $statusMenunggu?->id;  // default
+        $statusMenungguId = StatusVerifikasi::where('nama_status', 'Menunggu Piket')
+                                ->where('status', 1)->value('id');
 
         $dispensasi = Dispensasi::create([
             'organisasi_id'        => $request->organisasi_id,
@@ -95,7 +92,7 @@ class DispensasiController extends Controller
             'waktu_selesai'        => $request->waktu_selesai,
             'kegiatan'             => $request->kegiatan,
             'lampiran_dispensasi'  => $lampiranPath,
-            'status_verifikasi_id' => $statusId,
+            'status_verifikasi_id' => $statusMenungguId,
             'status'               => '1',
             'user_input'           => auth()->user()->id,
             'tanggal_input'        => date('Y-m-d H:i:s'),
@@ -112,6 +109,16 @@ class DispensasiController extends Controller
         ]);
 
         $dispensasi = Dispensasi::where('status', 1)->findOrFail($id);
+        $this->authorizeDetailEdit($dispensasi);
+
+        $user = auth()->user();
+        if ($user->hasRole('Ketua Kelas')) {
+            $ketuaKelasId = $user->ketuaKelasId();
+            $siswaKelasId = Siswa::where('id', $request->siswa_id)->value('kelas_id');
+            if (!$ketuaKelasId || (int) $siswaKelasId !== (int) $ketuaKelasId) {
+                return redirect()->back()->with('error', 'Anda hanya dapat menambahkan siswa dari kelas Anda sendiri.');
+            }
+        }
 
         $sudahAda = DispensasiDetail::where('dispensasi_id', $dispensasi->id)
             ->where('siswa_id', $request->siswa_id)
@@ -130,6 +137,35 @@ class DispensasiController extends Controller
             'tanggal_input' => date('Y-m-d H:i:s'),
         ]);
 
+        $statusDisetujuiId = StatusVerifikasi::where('nama_status', 'Disetujui')->where('status', 1)->value('id');
+        $statusMenungguId  = StatusVerifikasi::where('nama_status', 'Menunggu Piket')->where('status', 1)->value('id');
+
+        $creatorIsPetugasPiket = $user->hasRole('Petugas Piket')
+            && (int) $dispensasi->user_input === (int) $user->id;
+
+        if ($creatorIsPetugasPiket && (int) $dispensasi->status_verifikasi_id === (int) $statusMenungguId) {
+            // Petugas Piket membuat dispensasi sendiri → auto Disetujui begitu ada anggota,
+            // lalu propagate semua siswa (termasuk yang baru ditambahkan).
+            DB::transaction(function () use ($dispensasi, $statusDisetujuiId, $user) {
+                $allSiswaIds = DispensasiDetail::where('dispensasi_id', $dispensasi->id)
+                    ->where('status', 1)
+                    ->pluck('siswa_id')
+                    ->map(fn($v) => (int) $v)
+                    ->all();
+
+                $this->propagateDispensasiToAbsensi($dispensasi, $allSiswaIds);
+
+                $dispensasi->update([
+                    'status_verifikasi_id' => $statusDisetujuiId,
+                    'user_update'          => $user->id,
+                    'tanggal_update'       => date('Y-m-d H:i:s'),
+                ]);
+            });
+        } elseif ((int) $dispensasi->status_verifikasi_id === (int) $statusDisetujuiId) {
+            // Dispensasi sudah Disetujui sebelumnya → propagate hanya siswa yang baru ditambahkan.
+            $this->propagateDispensasiToAbsensi($dispensasi, [(int) $request->siswa_id]);
+        }
+
         return redirect()->back()->with('success', 'Siswa berhasil ditambahkan.');
     }
 
@@ -139,38 +175,14 @@ class DispensasiController extends Controller
 
         $statusDisetujui = StatusVerifikasi::where('nama_status', 'Disetujui')->where('status', 1)->first();
 
-        $siswaIds   = $dispensasi->details->pluck('siswa_id');
-        $tglMulai   = Carbon::parse($dispensasi->waktu_mulai)->startOfDay();
-        $tglSelesai = Carbon::parse($dispensasi->waktu_selesai)->endOfDay();
+        $siswaIds = $dispensasi->details->pluck('siswa_id')->map(fn($v) => (int) $v)->all();
 
-        if ($siswaIds->isEmpty()) {
+        if (empty($siswaIds)) {
             return redirect()->back()->with('error', 'Belum ada siswa yang ditambahkan ke dispensasi ini.');
         }
 
-        DB::transaction(function () use ($dispensasi, $siswaIds, $tglMulai, $tglSelesai, $statusDisetujui) {
-
-            $absensiList = Absensi::whereBetween('tanggal', [$tglMulai, $tglSelesai])
-                ->where('status', 1)
-                ->get();
-
-            foreach ($absensiList as $absensi) {
-                foreach ($siswaIds as $siswaId) {
-                    AbsensiDetail::updateOrCreate(
-                        [
-                            'absensi_id' => $absensi->id,
-                            'siswa_id'   => $siswaId,
-                        ],
-                        [
-                            'status_absensi_id' => 4,
-                            'is_full_day'       => 1,
-                            'keterangan'        => 'Dispensasi: ' . $dispensasi->kegiatan,
-                            'status'            => '1',
-                            'user_input'        => auth()->user()->id,
-                            'tanggal_input'     => date('Y-m-d H:i:s'),
-                        ]
-                    );
-                }
-            }
+        DB::transaction(function () use ($dispensasi, $siswaIds, $statusDisetujui) {
+            $this->propagateDispensasiToAbsensi($dispensasi, $siswaIds);
 
             $dispensasi->update([
                 'status_verifikasi_id' => $statusDisetujui?->id,
@@ -182,9 +194,56 @@ class DispensasiController extends Controller
         return redirect()->back()->with('success', 'Dispensasi berhasil diverifikasi dan absensi siswa telah diperbarui.');
     }
 
+    /**
+     * Terapkan dispensasi ke absensi yang sudah ada untuk kelas masing-masing siswa.
+     * Hanya menyentuh absensi rows yang sudah dibuat; bila admin belum membuat absensi
+     * untuk tanggal dispensasi, siswa baru mendapat status "Dispen" saat absensi diisi.
+     */
+    private function propagateDispensasiToAbsensi(Dispensasi $dispensasi, array $siswaIds): void
+    {
+        if (empty($siswaIds)) {
+            return;
+        }
+
+        $tglMulai   = Carbon::parse($dispensasi->waktu_mulai)->startOfDay();
+        $tglSelesai = Carbon::parse($dispensasi->waktu_selesai)->endOfDay();
+
+        $siswaKelasMap = Siswa::whereIn('id', $siswaIds)->pluck('kelas_id', 'id');
+
+        foreach ($siswaKelasMap as $siswaId => $kelasId) {
+            if (!$kelasId) {
+                continue;
+            }
+
+            $absensiList = Absensi::whereBetween('tanggal', [$tglMulai, $tglSelesai])
+                ->where('status', 1)
+                ->where('kelas_id', $kelasId)
+                ->get();
+
+            foreach ($absensiList as $absensi) {
+                AbsensiDetail::updateOrCreate(
+                    [
+                        'absensi_id' => $absensi->id,
+                        'siswa_id'   => $siswaId,
+                    ],
+                    [
+                        'status_absensi_id' => 4,
+                        'is_full_day'       => 1,
+                        'keterangan'        => 'Dispensasi: ' . $dispensasi->kegiatan,
+                        'status'            => '1',
+                        'user_input'        => auth()->user()->id,
+                        'tanggal_input'     => date('Y-m-d H:i:s'),
+                    ]
+                );
+            }
+        }
+    }
+
     public function destroyDetail(string $id)
     {
-        $detail = DispensasiDetail::where('status', 1)->findOrFail($id);
+        $detail = DispensasiDetail::with('dispensasi')->where('status', 1)->findOrFail($id);
+        $this->authorizeDetailEdit($detail->dispensasi);
+
         $detail->update([
             'status'         => 9,
             'user_update'    => auth()->user()->id,
@@ -228,19 +287,49 @@ class DispensasiController extends Controller
             'details.siswa.kelas',
         ])->where('status', 1)->findOrFail($id);
 
-        $kelas = Kelas::where('status', 1)->orderBy('nama_kelas')->get();
+        $user         = auth()->user();
+        $ketuaKelas   = $user->hasRole('Ketua Kelas') ? $user->ketuaKelas() : null;
+        $ketuaKelasId = $ketuaKelas->id ?? null;
+
+        // Ketua Kelas hanya boleh mengisi dispensasi yang ia buat sendiri.
+        $canEditDetail = $user->hasRole(['Admin', 'Petugas Piket'])
+            || ($user->hasRole('Ketua Kelas') && (int) $dispensasi->user_input === (int) $user->id);
+
+        $kelas = $ketuaKelasId
+            ? Kelas::where('status', 1)->where('id', $ketuaKelasId)->get()
+            : Kelas::where('status', 1)->orderBy('nama_kelas')->get();
 
         $sudahDitambahkan = $dispensasi->details->pluck('siswa_id');
 
-        $siswaPerKelas = Siswa::where('status', 1)
+        $siswaQuery = Siswa::where('status', 1)
             ->whereNotIn('id', $sudahDitambahkan)
-            ->orderBy('nama_siswa')
-            ->get(['id', 'nama_siswa', 'kelas_id'])
+            ->orderBy('nama_siswa');
+
+        if ($ketuaKelasId) {
+            $siswaQuery->where('kelas_id', $ketuaKelasId);
+        }
+
+        $siswaPerKelas = $siswaQuery->get(['id', 'nama_siswa', 'kelas_id'])
             ->groupBy('kelas_id')
             ->map(fn($group) => $group->values());
 
         $statusDisetujuiId = StatusVerifikasi::where('nama_status', 'Disetujui')->where('status', 1)->value('id');
 
-        return view('Dispensasi.show', compact('dispensasi', 'kelas', 'siswaPerKelas', 'statusDisetujuiId'));
+        return view('Dispensasi.show', compact(
+            'dispensasi', 'kelas', 'siswaPerKelas', 'statusDisetujuiId',
+            'canEditDetail', 'ketuaKelas'
+        ));
+    }
+
+    private function authorizeDetailEdit(Dispensasi $dispensasi): void
+    {
+        $user = auth()->user();
+        if ($user->hasRole(['Admin', 'Petugas Piket'])) {
+            return;
+        }
+        if ($user->hasRole('Ketua Kelas') && (int) $dispensasi->user_input === (int) $user->id) {
+            return;
+        }
+        abort(403, 'Anda tidak berhak mengubah data siswa pada dispensasi ini.');
     }
 }

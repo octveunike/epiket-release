@@ -29,8 +29,7 @@
             </div>
             <ul class="sidebar-menu">
 
-                {{-- Kelas: Admin & Petugas Piket --}}
-                @if(auth()->user()->hasRole(['Admin','Petugas Piket']))
+                @if(auth()->user()->hasRole('Admin'))
                 <li>
                     <a href="{{ route('Kelas.index') }}" class="{{ request()->routeIs('Kelas.*') ? 'active' : '' }}">
                         <i class="ri-door-open-line"></i><span>Kelas</span>
@@ -38,8 +37,7 @@
                 </li>
                 @endif
 
-                {{-- Periode Akademik: Admin & Petugas Piket --}}
-                @if(auth()->user()->hasRole(['Admin','Petugas Piket']))
+                @if(auth()->user()->hasRole('Admin'))
                 <li>
                     <a href="{{ route('PeriodeAkademik.index') }}" class="{{ request()->routeIs('PeriodeAkademik.*') ? 'active' : '' }}">
                         <i class="ri-calendar-2-line"></i><span>Periode Akademik</span>
@@ -47,7 +45,6 @@
                 </li>
                 @endif
 
-                {{-- Data Absensi: Ketua Kelas, Petugas Piket, Admin --}}
                 @if(auth()->user()->hasRole(['Ketua Kelas','Admin','Petugas Piket']))
                 <li>
                     <a href="{{ route('Absensi.index') }}" class="{{ request()->routeIs('Absensi.index') || request()->routeIs('Absensi.create') || request()->routeIs('Absensi.show') || request()->routeIs('Absensi.isiAbsensi') ? 'active' : '' }}">
@@ -56,8 +53,7 @@
                 </li>
                 @endif
 
-                {{-- Validasi Absensi: Wali Kelas saja --}}
-                @if(auth()->user()->hasRole('Wali Kelas'))
+                @if(auth()->user()->hasRole(['Wali Kelas','Petugas Piket']))
                 <li>
                     <a href="{{ route('Absensi.walikelas.index') }}" class="{{ request()->routeIs('Absensi.walikelas.*') ? 'active' : '' }}">
                         <i class="ri-checkbox-circle-line"></i><span>Validasi Absensi</span>
@@ -65,37 +61,39 @@
                 </li>
                 @endif
 
-                {{-- Laporan Absensi: Wali Kelas, Petugas Piket, Admin --}}
-                @if(auth()->user()->hasRole(['Wali Kelas', 'Admin','Petugas Piket']))
+                {{-- Laporan: hanya aktif di route Laporan.* --}}
+                @if(auth()->user()->hasRole(['Wali Kelas','Admin','Petugas Piket','Ketua Kelas']))
                 <li>
-                    <a href="{{ route('Laporan.index') }}" class="{{ request()->routeIs('Laporan.index') || request()->routeIs('Laporan.create') || request()->routeIs('Absensi.show') || request()->routeIs('Absensi.isiAbsensi') ? 'active' : '' }}">
-                        <i class="ri-calendar-check-line"></i><span>Buat Laporan</span>
+                    <a href="{{ route('Laporan.index') }}" class="{{ request()->routeIs('Laporan.*') ? 'active' : '' }}">
+                        <i class="ri-bar-chart-2-line"></i><span>Buat Laporan</span>
                     </a>
                 </li>
                 @endif
 
-                {{-- Keterlambatan: semua role --}}
+                @if(auth()->user()->hasRole(['Admin','Petugas Piket']))
                 <li>
                     <a href="{{ route('Keterlambatan.index') }}" class="{{ request()->routeIs('Keterlambatan.*') ? 'active' : '' }}">
                         <i class="ri-time-line"></i><span>Keterlambatan</span>
                     </a>
                 </li>
+                @endif
 
-                {{-- Dispensasi: semua role --}}
+                @if(auth()->user()->hasRole(['Admin','Petugas Piket','Ketua Kelas']))
                 <li>
                     <a href="{{ route('Dispensasi.index') }}" class="{{ request()->routeIs('Dispensasi.*') ? 'active' : '' }}">
                         <i class="ri-file-text-line"></i><span>Dispensasi</span>
                     </a>
                 </li>
+                @endif
 
-                {{-- Organisasi: semua role --}}
+                @if(auth()->user()->hasRole('Admin'))
                 <li>
                     <a href="{{ route('Organisasi.index') }}" class="{{ request()->routeIs('Organisasi.*') ? 'active' : '' }}">
                         <i class="ri-team-line"></i><span>Organisasi</span>
                     </a>
                 </li>
+                @endif
 
-                {{-- Daftar Tamu: Admin & Petugas Piket --}}
                 @if(auth()->user()->hasRole(['Admin','Petugas Piket']))
                 <li>
                     <a href="{{ route('DaftarTamu.index') }}" class="{{ request()->routeIs('DaftarTamu.*') ? 'active' : '' }}">
@@ -107,8 +105,7 @@
             </ul>
         </div>
 
-        {{-- ======== ADMIN ======== --}}
-        @if(auth()->user()->hasRole(['Admin','Petugas Piket']))
+        @if(auth()->user()->hasRole('Admin'))
         <div class="sidebar-group active">
             <div class="sidebar-group-header sidebar-group-label">
                 <span>ADMIN</span>
@@ -134,8 +131,7 @@
         </div>
         @endif
 
-        {{-- ======== USER MANAGEMENT ======== --}}
-        @if(auth()->user()->hasRole(['Admin','Petugas Piket']))
+        @if(auth()->user()->hasRole('Admin'))
         <div class="sidebar-group active">
             <div class="sidebar-group-header sidebar-group-label">
                 <span>USER MANAGEMENT</span>
@@ -150,21 +146,6 @@
             </ul>
         </div>
         @endif
-
-        {{-- ======== PENGATURAN ======== --}}
-        <div class="sidebar-group active">
-            <div class="sidebar-group-header sidebar-group-label">
-                <span>PENGATURAN</span>
-                <i class="ri-arrow-down-s-line dropdown-icon"></i>
-            </div>
-            <ul class="sidebar-menu">
-                <li>
-                    <a href="#">
-                        <i class="ri-settings-3-line"></i><span>Settings</span>
-                    </a>
-                </li>
-            </ul>
-        </div>
 
     </div>
 </div>

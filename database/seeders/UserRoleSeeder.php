@@ -22,7 +22,7 @@ class UserRoleSeeder extends Seeder
             'status' => 1,
         ];
 
-        // Petugas
+        // Petugas Piket
         $users[] = [
             'id' => 2,
             'nama' => 'Petugas Piket',
@@ -32,29 +32,25 @@ class UserRoleSeeder extends Seeder
             'status' => 1,
         ];
 
-        // Wali kelas (10)
-        for ($i = 1; $i <= 10; $i++) {
-            $users[] = [
-                'id' => 2 + $i,
-                'nama' => "Wali Kelas $i",
-                'username' => "guru$i",
-                'email' => "guru$i@epiket.test",
-                'password' => Hash::make('password'),
-                'status' => 1,
-            ];
-        }
+        // Wali Kelas (X 1)
+        $users[] = [
+            'id' => 3,
+            'nama' => 'Dra. Dian T Amperawati',
+            'username' => 'wali_x1',
+            'email' => 'dian@epiket.test',
+            'password' => Hash::make('password'),
+            'status' => 1,
+        ];
 
-        // Ketua kelas (10)
-        for ($i = 1; $i <= 10; $i++) {
-            $users[] = [
-                'id' => 12 + $i,
-                'nama' => "Ketua Kelas $i",
-                'username' => "ketua$i",
-                'email' => "ketua$i@epiket.test",
-                'password' => Hash::make('password'),
-                'status' => 1,
-            ];
-        }
+        // Ketua Kelas (X 1)
+        $users[] = [
+            'id' => 4,
+            'nama' => 'ABDUL GHANI AL-KHAIRI',
+            'username' => 'ketua_x1',
+            'email' => 'ketua@epiket.test',
+            'password' => Hash::make('password'),
+            'status' => 1,
+        ];
 
         DB::table('users')->insert($users);
 
@@ -66,15 +62,11 @@ class UserRoleSeeder extends Seeder
         // Petugas
         $userRoles[] = ['user_id' => 2, 'role_id' => 2, 'status' => 1];
 
-        // Wali kelas
-        for ($i = 3; $i <= 12; $i++) {
-            $userRoles[] = ['user_id' => $i, 'role_id' => 3, 'status' => 1];
-        }
+        // Wali Kelas
+        $userRoles[] = ['user_id' => 3, 'role_id' => 3, 'status' => 1];
 
-        // Ketua kelas
-        for ($i = 13; $i <= 22; $i++) {
-            $userRoles[] = ['user_id' => $i, 'role_id' => 7, 'status' => 1];
-        }
+        // Ketua Kelas
+        $userRoles[] = ['user_id' => 4, 'role_id' => 4, 'status' => 1];
 
         DB::table('user_role')->insert($userRoles);
     }

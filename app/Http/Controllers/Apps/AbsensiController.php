@@ -24,6 +24,14 @@ class AbsensiController extends Controller
             return redirect()->route('Absensi.walikelas.index');
         }
 
+        $ketuaKelasId = null;
+        if (auth()->user()->hasRole('Ketua Kelas')) {
+            $ketuaKelasId = auth()->user()->ketuaKelasId();
+            if (!$ketuaKelasId) {
+                abort(403, 'Akun Anda belum tertaut ke data siswa/kelas. Hubungi Admin.');
+            }
+        }
+
         $query = Absensi::withCount('details')
             ->with(['kelas', 'periodeAkademik', 'statusVerifikasi'])
             ->where('status', 1)
@@ -33,12 +41,16 @@ class AbsensiController extends Controller
             $query->whereDate('tanggal', $request->tanggal);
         }
 
-        if ($request->filled('kelas_id')) {
+        if ($ketuaKelasId) {
+            $query->where('kelas_id', $ketuaKelasId);
+        } elseif ($request->filled('kelas_id')) {
             $query->where('kelas_id', $request->kelas_id);
         }
 
         $absensiList               = $query->get();
-        $kelas                     = Kelas::where('status', 1)->orderBy('nama_kelas')->get();
+        $kelas                     = $ketuaKelasId
+            ? Kelas::where('status', 1)->where('id', $ketuaKelasId)->get()
+            : Kelas::where('status', 1)->orderBy('nama_kelas')->get();
         $statusMenungguPengisianId = StatusVerifikasi::where('nama_status', 'Menunggu Pengisian')
                                         ->where('status', 1)->value('id');
 
@@ -47,7 +59,11 @@ class AbsensiController extends Controller
 
     public function create()
     {
-        $kelas       = Kelas::where('status', 1)->orderBy('nama_kelas')->get();
+        if (!auth()->user()->hasRole(['Admin', 'Petugas Piket'])) {
+            return redirect()->route('Absensi.index');
+        }
+
+        $kelas        = Kelas::where('status', 1)->orderBy('nama_kelas')->get();
         $periodeAktif = PeriodeAkademik::where('status', 1)->first();
 
         return view('Absensi.create', compact('kelas', 'periodeAktif'));
@@ -55,6 +71,10 @@ class AbsensiController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->hasRole(['Admin', 'Petugas Piket'])) {
+            abort(403, 'Hanya Admin / Petugas Piket yang dapat membuat absensi baru.');
+        }
+
         $request->validate([
             'kelas_id' => ['required', 'integer'],
             'tanggal'  => ['required', 'date'],
@@ -88,6 +108,8 @@ class AbsensiController extends Controller
         $absensi = Absensi::with(['kelas', 'periodeAkademik'])
             ->where('status', 1)
             ->findOrFail($id);
+
+        $this->authorizeKelasAccess($absensi->kelas_id);
 
         $statusMenungguPengisianId = StatusVerifikasi::where('nama_status', 'Menunggu Pengisian')
                                         ->where('status', 1)->value('id');
@@ -188,12 +210,32 @@ class AbsensiController extends Controller
             'kelas',
             'periodeAkademik',
             'statusVerifikasi',
+            'userInput',
             'details.siswa',
             'details.statusAbsensi',
             'details.jams.jam',
         ])->where('status', 1)->findOrFail($id);
 
+        $this->authorizeKelasAccess($absensi->kelas_id);
+
         return view('Absensi.show', compact('absensi'));
+    }
+
+    private function authorizeKelasAccess(?int $kelasId): void
+    {
+        $user = auth()->user();
+        if ($user->hasRole('Ketua Kelas')) {
+            $allowed = $user->ketuaKelasId();
+            if (!$allowed || $allowed !== (int) $kelasId) {
+                abort(403, 'Anda hanya dapat mengakses data kelas Anda sendiri.');
+            }
+        }
+        if ($user->hasRole('Wali Kelas')) {
+            $allowed = $user->waliKelasId();
+            if (!$allowed || $allowed !== (int) $kelasId) {
+                abort(403, 'Anda hanya dapat mengakses data kelas Anda sendiri.');
+            }
+        }
     }
 
     public function destroy(string $id)
@@ -231,18 +273,22 @@ class AbsensiController extends Controller
             ->with('success', 'Data absensi berhasil dihapus.');
     }
 
-    // ── WALI KELAS: Index (daftar menunggu validasi) ──────────
+    // ── WALI KELAS / PETUGAS PIKET: Index (daftar menunggu validasi) ──────────
 
     public function waliKelasIndex(Request $request)
     {
-        $user = auth()->user();
+        $user         = auth()->user();
+        $scopeKelasId = $this->resolveValidationScopeKelasId();
 
-        // Tabel atas: semua absensi menunggu validasi wali
+        // Tabel atas: absensi menunggu validasi
         $query = Absensi::with(['kelas', 'periodeAkademik', 'statusVerifikasi'])
             ->where('status', 1)
             ->where('status_verifikasi_id', 3)
             ->orderByDesc('tanggal');
 
+        if ($scopeKelasId) {
+            $query->where('kelas_id', $scopeKelasId);
+        }
         if ($request->filled('dari')) {
             $query->whereDate('tanggal', '>=', $request->dari);
         }
@@ -258,6 +304,9 @@ class AbsensiController extends Controller
             ->whereIn('status_verifikasi_id', [4, 5, 6])
             ->orderByDesc('tanggal_update');
 
+        if ($scopeKelasId) {
+            $historyQuery->where('kelas_id', $scopeKelasId);
+        }
         if ($request->filled('dari')) {
             $historyQuery->whereDate('tanggal', '>=', $request->dari);
         }
@@ -271,14 +320,39 @@ class AbsensiController extends Controller
         return view('Absensi/index-walikelas', compact('absensiList', 'historyList', 'kelas'));
     }
 
-    // ── WALI KELAS: Validasi satu absensi ────────────────────
+    /**
+     * Scope kelas untuk flow validasi: Wali Kelas → kelas-nya sendiri,
+     * Admin/Petugas Piket → null (lihat semua), selain itu → 403.
+     */
+    private function resolveValidationScopeKelasId(): ?int
+    {
+        $user = auth()->user();
+        if ($user->hasRole('Wali Kelas')) {
+            $id = $user->waliKelasId();
+            if (!$id) {
+                abort(403, 'Akun Anda belum tertaut ke data guru/kelas. Hubungi Admin.');
+            }
+            return $id;
+        }
+        if ($user->hasRole(['Admin', 'Petugas Piket'])) {
+            return null;
+        }
+        abort(403);
+    }
+
+    // ── WALI KELAS / PETUGAS PIKET: Validasi satu absensi ────────────────────
 
     public function waliKelasValidasi(Request $request, string $id)
     {
-        $user    = auth()->user();
-        $absensi = Absensi::where('status', 1)
-            ->where('status_verifikasi_id', 3)
-            ->findOrFail($id);
+        $user         = auth()->user();
+        $scopeKelasId = $this->resolveValidationScopeKelasId();
+
+        $query = Absensi::where('status', 1)->where('status_verifikasi_id', 3);
+        if ($scopeKelasId) {
+            $query->where('kelas_id', $scopeKelasId);
+        }
+
+        $absensi = $query->findOrFail($id);
 
         $absensi->update([
             'status_verifikasi_id' => 5,
@@ -290,7 +364,7 @@ class AbsensiController extends Controller
             ->with('success', 'Absensi berhasil divalidasi.');
     }
 
-    // ── WALI KELAS: Bulk validasi ─────────────────────────────
+    // ── WALI KELAS / PETUGAS PIKET: Bulk validasi ─────────────────────────────
 
     public function waliKelasBulkValidasi(Request $request)
     {
@@ -299,28 +373,41 @@ class AbsensiController extends Controller
             'ids.*' => ['integer'],
         ]);
 
-        $user    = auth()->user();
-        $updated = Absensi::where('status', 1)
+        $user         = auth()->user();
+        $scopeKelasId = $this->resolveValidationScopeKelasId();
+
+        $query = Absensi::where('status', 1)
             ->where('status_verifikasi_id', 3)
-            ->whereIn('id', $request->ids)
-            ->update([
-                'status_verifikasi_id' => 5,
-                'user_update'          => $user->id,
-                'tanggal_update'       => now(),
-            ]);
+            ->whereIn('id', $request->ids);
+
+        if ($scopeKelasId) {
+            $query->where('kelas_id', $scopeKelasId);
+        }
+
+        $updated = $query->update([
+            'status_verifikasi_id' => 5,
+            'user_update'          => $user->id,
+            'tanggal_update'       => now(),
+        ]);
 
         return redirect()->route('Absensi.walikelas.index')
             ->with('success', $updated . ' absensi berhasil divalidasi.');
     }
 
-    // ── WALI KELAS: History validasi ──────────────────────────
+    // ── WALI KELAS / PETUGAS PIKET: History validasi ──────────────────────────
 
     public function waliKelasHistory(Request $request)
     {
+        $scopeKelasId = $this->resolveValidationScopeKelasId();
+
         $query = Absensi::with(['kelas', 'periodeAkademik', 'statusVerifikasi'])
             ->where('status', 1)
             ->whereIn('status_verifikasi_id', [4, 5, 6])
             ->orderByDesc('tanggal_update');
+
+        if ($scopeKelasId) {
+            $query->where('kelas_id', $scopeKelasId);
+        }
 
         if ($request->filled('dari')) {
             $query->whereDate('tanggal', '>=', $request->dari);

@@ -3,123 +3,150 @@
 namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Apps\PeriodeAkademik;
-use Exception;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class PeriodeAkademikController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        $data = PeriodeAkademik::where('status', '1')->get();
+        $data = PeriodeAkademik::orderByDesc('status')->orderByDesc('id')->get();
         return view('PeriodeAkademik.index', compact('data'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         return view('PeriodeAkademik.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        $validation = $request->validate([
-            'nama_periode'=> ['required', 'string', 'max:100'],
-            'tahun_ajaran'=> ['required', 'string', 'max:100'],
-            'semester'=> ['required', 'string', 'max:100'],
-            'tanggal_mulai'  => ['required', 'date'],
-            'tanggal_selesai'  => ['required', 'date'],
+        $request->validate([
+            'nama_periode'    => ['required', 'string', 'max:100'],
+            'tahun_ajaran'    => ['required', 'string', 'max:20'],
+            'semester'        => ['required', 'string', 'max:20'],
+            'tanggal_mulai'   => ['required', 'date'],
+            'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
+            'status'          => ['required', 'in:0,1'],
         ]);
 
-        DB::beginTransaction();
-
-        try {
-            PeriodeAkademik::create([
-                'nama_periode' => $validation['nama_periode'],
-                'tahun_ajaran' => $validation['tahun_ajaran'],
-                'semester'     => $validation['semester'],
-                'tanggal_mulai'=> $validation['tanggal_mulai'],
-                'tanggal_selesai' => $validation['tanggal_selesai'],
-                'status'       => '1',
-                'user_input'   => auth()->user()->id,
-                'tanggal_input'=> date('Y-m-d H:i:s'),
-            ]);
-
-            DB::commit();
-        } catch (Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->with('error', $e->getMessage());
+        // Cek double aktif
+        if ($request->status == 1) {
+            $aktif = PeriodeAkademik::where('status', 1)->first();
+            if ($aktif) {
+                return back()->withInput()
+                    ->with('error_aktif', $aktif->nama_periode);
+            }
         }
 
-        return redirect()->route('PeriodeAkademik.index')->with('success', 'Data Periode Akademik berhasil ditambahkan');
+        PeriodeAkademik::create([
+            'nama_periode'    => $request->nama_periode,
+            'tahun_ajaran'    => $request->tahun_ajaran,
+            'semester'        => $request->semester,
+            'tanggal_mulai'   => $request->tanggal_mulai,
+            'tanggal_selesai' => $request->tanggal_selesai,
+            'status'          => $request->status,
+            'user_input'      => auth()->user()->id,
+            'tanggal_input'   => now(),
+        ]);
+
+        return redirect()->route('PeriodeAkademik.index')
+            ->with('success', 'Periode akademik berhasil ditambahkan.');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(string $id)
     {
-        $PeriodeAkademik  = PeriodeAkademik::findOrFail($id);
+        $PeriodeAkademik = PeriodeAkademik::findOrFail($id);
         return view('PeriodeAkademik.edit', compact('PeriodeAkademik'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
-        $validation = $request->validate([
-            'nama_periode'=> ['required', 'string', 'max:100'],
-            'tahun_ajaran'=> ['required', 'string', 'max:100'],
-            'semester'=> ['required', 'string', 'max:100'],
-            'tanggal_mulai'  => ['required', 'date'],
-            'tanggal_selesai'  => ['required', 'date'],
+        $request->validate([
+            'nama_periode'    => ['required', 'string', 'max:100'],
+            'tahun_ajaran'    => ['required', 'string', 'max:20'],
+            'semester'        => ['required', 'string', 'max:20'],
+            'tanggal_mulai'   => ['required', 'date'],
+            'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
+            'status'          => ['required', 'in:0,1'],
         ]);
 
-        DB::beginTransaction();
-
-        try {
-            $data = PeriodeAkademik::findOrFail($id);
-            $data->update([
-                'nama_periode' => $validation['nama_periode'],
-                'tahun_ajaran' => $validation['tahun_ajaran'],
-                'semester'     => $validation['semester'],
-                'tanggal_mulai'=> $validation['tanggal_mulai'],
-                'tanggal_selesai' => $validation['tanggal_selesai'],
-                'user_update'   => auth()->user()->id,
-                'tanggal_update'=> date('Y-m-d H:i:s'),
-            ]);
-
-            DB::commit();
-        } catch (Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->with('error', $e->getMessage());
+        // Cek double aktif (kecuali periode ini sendiri)
+        if ($request->status == 1) {
+            $aktif = PeriodeAkademik::where('status', 1)->where('id', '!=', $id)->first();
+            if ($aktif) {
+                return back()->withInput()
+                    ->with('error_aktif', $aktif->nama_periode);
+            }
         }
 
-        return redirect()->route('PeriodeAkademik.index')->with('success', 'Data Periode Akademik berhasil diupdate');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        $data = PeriodeAkademik::findOrFail($id);
-        $data->update([
-            'status'        => '9',
-            'user_update'   => auth()->user()->id,
-            'tanggal_update'=> date('Y-m-d H:i:s'),
+        $periode = PeriodeAkademik::findOrFail($id);
+        $periode->update([
+            'nama_periode'    => $request->nama_periode,
+            'tahun_ajaran'    => $request->tahun_ajaran,
+            'semester'        => $request->semester,
+            'tanggal_mulai'   => $request->tanggal_mulai,
+            'tanggal_selesai' => $request->tanggal_selesai,
+            'status'          => $request->status,
+            'user_update'     => auth()->user()->id,
+            'tanggal_update'  => now(),
         ]);
 
-        return redirect()->route('PeriodeAkademik.index')->with('success', 'Data Periode Akademik berhasil dihapus');
+        return redirect()->route('PeriodeAkademik.index')
+            ->with('success', 'Periode akademik berhasil diperbarui.');
+    }
+
+    public function destroy(string $id)
+    {
+        $periode = PeriodeAkademik::findOrFail($id);
+
+        if ($periode->status == 1) {
+            return redirect()->back()
+                ->with('error', 'Periode aktif tidak dapat dihapus. Ubah status ke Non-Aktif terlebih dahulu.');
+        }
+
+        if (PeriodeAkademik::count() <= 1) {
+            return redirect()->back()
+                ->with('error', 'Minimal harus ada 1 periode akademik.');
+        }
+
+        $periode->delete();
+
+        return redirect()->route('PeriodeAkademik.index')
+            ->with('success', 'Periode akademik berhasil dihapus.');
+    }
+
+    public function aktivasi(string $id)
+    {
+        // Cek apakah sudah ada periode aktif lain
+        $aktif = PeriodeAkademik::where('status', 1)->where('id', '!=', $id)->first();
+
+        if ($aktif) {
+            return redirect()->back()
+                ->with('error_aktif', 'Sudah ada periode aktif: <strong>' . $aktif->nama_periode . '</strong>. Non-aktifkan terlebih dahulu.');
+        }
+
+        $periode = PeriodeAkademik::findOrFail($id);
+        $periode->update([
+            'status'         => 1,
+            'user_update'    => auth()->user()->id,
+            'tanggal_update' => now(),
+        ]);
+
+        return redirect()->route('PeriodeAkademik.index')
+            ->with('success', $periode->nama_periode . ' berhasil diaktifkan.');
+    }
+
+    public function nonaktifkan(string $id)
+    {
+        $periode = PeriodeAkademik::findOrFail($id);
+        $periode->update([
+            'status'         => 0,
+            'user_update'    => auth()->user()->id,
+            'tanggal_update' => now(),
+        ]);
+
+        return redirect()->route('PeriodeAkademik.index')
+            ->with('success', $periode->nama_periode . ' berhasil dinonaktifkan.');
     }
 }

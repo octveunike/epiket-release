@@ -11,32 +11,23 @@ class PeriodeAkademikSeeder extends Seeder
     {
         DB::table('periode_akademik')->insert([
             [
-                'id'=>1,
-                'nama_periode'=>'2024/2025 Ganjil',
-                'semester'=>'Ganjil',
-                'status'=>1,
-                'tahun_ajaran'=>'2024/2025',
-                'tanggal_mulai'=>'2024-02-01',
-                'tanggal_selesai'=>'2024-07-02'
+                'id' => 1,
+                'nama_periode' => '2025/2026 Ganjil',
+                'tahun_ajaran' => '2025/2026',
+                'semester' => 'Ganjil',
+                'tanggal_mulai' => '2025-07-01',
+                'tanggal_selesai' => '2025-12-31',
+                'status' => 0,
             ],
             [
-                'id'=>2,
-                'nama_periode'=>'2024/2025 Genap',
-                'semester'=>'Genap',
-                'status'=>0,
-                'tahun_ajaran'=>'2024/2025',
-                'tanggal_mulai'=>'2025-02-01',
-                'tanggal_selesai'=>'2025-08-01'
+                'id' => 2,
+                'nama_periode' => '2025/2026 Genap',
+                'tahun_ajaran' => '2025/2026',
+                'semester' => 'Genap',
+                'tanggal_mulai' => '2026-01-01',
+                'tanggal_selesai' => '2026-06-30',
+                'status' => 1,
             ],
-            [
-                'id'=>3,
-                'nama_periode'=>'2024/2025 Ganjil',
-                'semester'=>'Ganjil',
-                'status'=>1,
-                'tahun_ajaran'=>'2024/2025',
-                'tanggal_mulai'=>'2026-03-01',
-                'tanggal_selesai'=>'2026-03-31'
-            ]
         ]);
     }
 }

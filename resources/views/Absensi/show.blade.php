@@ -3,14 +3,21 @@
 @section('content')
 
 @php
-    $details   = $absensi->details;
-    $izin      = $details->where('status_absensi_id', 1)->count();
-    $sakit     = $details->where('status_absensi_id', 2)->count();
-    $alpha     = $details->where('status_absensi_id', 3)->count();
-    $dispen    = $details->where('status_absensi_id', 4)->count();
-    $terlambat = $details->where('status_absensi_id', 5)->count();
+    $details    = $absensi->details;
+    $izin       = $details->where('status_absensi_id', 1)->count();
+    $sakit      = $details->where('status_absensi_id', 2)->count();
+    $alpha      = $details->where('status_absensi_id', 3)->count();
+    $dispen     = $details->where('status_absensi_id', 4)->count();
+    $terlambat  = $details->where('status_absensi_id', 5)->count();
     $totalSiswa = $absensi->kelas->siswa()->where('status', 1)->count();
-    $hadir     = $totalSiswa - $izin - $sakit - $alpha;
+    $hadir      = $totalSiswa - $izin - $sakit - $alpha;
+
+    // Ambil rentang jam seharian dari tabel jam_absensi
+    $jamPertama = \App\Models\Reference\JamAbsensi::where('status', 1)->orderBy('jam_ke')->first();
+    $jamTerakhir = \App\Models\Reference\JamAbsensi::where('status', 1)->orderByDesc('jam_ke')->first();
+    $waktuSeharian = $jamPertama && $jamTerakhir
+        ? \Carbon\Carbon::parse($jamPertama->waktu_mulai)->format('H:i') . ' – ' . \Carbon\Carbon::parse($jamTerakhir->waktu_selesai)->format('H:i')
+        : 'Seharian';
 @endphp
 
 <div class="page-header">
@@ -65,7 +72,7 @@
         </div>
         <div>
             <div class="ab-info-label">Diinput Oleh</div>
-            <div class="ab-info-value-sm">{{ $absensi->user_input ?? '—' }}</div>
+            <div class="ab-info-value-sm">{{ $absensi->userInput->nama ?? '—' }}</div>
         </div>
         <div>
             <div class="ab-info-label">Tanggal Input</div>
@@ -106,7 +113,6 @@
                     <th>Nama Siswa</th>
                     <th class="col-center">Status</th>
                     <th class="col-center">Waktu</th>
-                    <th>Jam</th>
                     <th>Keterangan</th>
                     <th>Lampiran</th>
                 </tr>
@@ -135,20 +141,22 @@
                         </td>
                         <td class="col-center">
                             @if ($d->is_full_day)
-                                <span class="text-muted-sm">Seharian</span>
-                            @else
-                                <span style="color:#f59e0b;font-size:12px;font-weight:600;">Per Jam</span>
-                            @endif
-                        </td>
-                        <td>
-                            @if (!$d->is_full_day && $d->jams->count())
-                                <div class="jam-tags-wrap">
-                                    @foreach ($d->jams as $j)
-                                        <span class="jam-chip">
-                                            Jam {{ $j->jam->jam_ke ?? '?' }}
-                                            ({{ $j->jam ? \Carbon\Carbon::parse($j->jam->waktu_mulai)->format('H:i') : '' }})
-                                        </span>
-                                    @endforeach
+                                {{-- Seharian: tampilkan rentang dari jam_absensi --}}
+                                <span class="text-muted-sm">{{ $waktuSeharian }}</span>
+                            @elseif ($d->jams->count())
+                                {{-- Per jam: tampilkan rentang dari jam yang dipilih --}}
+                                @php
+                                    $jamIds   = $d->jams->pluck('jam')->filter()->sortBy('jam_ke');
+                                    $jamAwal  = $jamIds->first();
+                                    $jamAkhir = $jamIds->last();
+                                @endphp
+                                <span style="font-size:13px;font-weight:600;color:#f59e0b;">
+                                    {{ $jamAwal ? \Carbon\Carbon::parse($jamAwal->waktu_mulai)->format('H:i') : '?' }}
+                                    –
+                                    {{ $jamAkhir ? \Carbon\Carbon::parse($jamAkhir->waktu_selesai)->format('H:i') : '?' }}
+                                </span>
+                                <div class="text-muted-sm">
+                                    Jam {{ $jamIds->pluck('jam_ke')->implode(', ') }}
                                 </div>
                             @else
                                 <span class="text-muted-sm">—</span>
@@ -168,7 +176,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="td-empty">Belum ada data detail kehadiran.</td>
+                        <td colspan="6" class="td-empty">Belum ada data detail kehadiran.</td>
                     </tr>
                 @endforelse
             </tbody>

@@ -5,10 +5,6 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
-use App\Models\Admin\Staff;
-use App\Models\Apps\Organisasi;
-use App\Models\Apps\Absensi;
-use App\Models\Apps\AbsensiDetail;
 
 class DatabaseSeeder extends Seeder
 {
@@ -22,8 +18,6 @@ class DatabaseSeeder extends Seeder
             StatusVerifikasiSeeder::class,
             JamAbsensiSeeder::class,
             PeriodeAkademikSeeder::class,
-            GuruSeeder::class,
-            SiswaSeeder::class,
             KelasSeeder::class,
         ]);
 
@@ -34,22 +28,5 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('testing'),
             'status'   => 1,
         ]);
-
-        Staff::factory(3)->create();
-
-        Organisasi::factory(5)->create();
-
-        $guruUntukOrganisasi = \App\Models\Admin\Guru::inRandomOrder()->take(5)->pluck('id');
-
-        Organisasi::all()->each(function ($organisasi, $index) use ($guruUntukOrganisasi) {
-            $organisasi->update([
-                'pembina_id' => $guruUntukOrganisasi[$index] ?? null
-            ]);
-        });
-
-        Absensi::factory(5)->create();
-        AbsensiDetail::factory(10)->create();
-
-        \App\Models\Apps\DaftarTamu::factory(10)->create();
     }
 }

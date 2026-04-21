@@ -7,7 +7,7 @@
         <div class="breadcrumb">Admin / <span class="breadcrumb-link">Laporan</span></div>
         <h2>Laporan Kehadiran Siswa</h2>
     </div>
-    @if(count($rows) > 0)
+    @if(!empty($rows) && count($rows) > 0)
         <form method="GET" action="{{ route('Laporan.export') }}" style="display:inline;">
             <input type="hidden" name="dari"     value="{{ request('dari') }}">
             <input type="hidden" name="sampai"   value="{{ request('sampai') }}">
@@ -37,14 +37,24 @@
 
         <div class="form-group" style="margin-bottom:0;min-width:180px;">
             <label class="form-label">Kelas</label>
-            <select name="kelas_id" class="form-control">
-                <option value="">Semua Kelas</option>
-                @foreach($kelasList as $k)
-                    <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
-                        {{ $k->nama_kelas }}
-                    </option>
-                @endforeach
-            </select>
+            @php
+                $u = auth()->user();
+                $lockedKelas = $u->hasRole('Ketua Kelas') ? $u->ketuaKelas()
+                             : ($u->hasRole('Wali Kelas') ? $u->waliKelas() : null);
+            @endphp
+            @if ($lockedKelas)
+                <input type="hidden" name="kelas_id" value="{{ $lockedKelas->id }}">
+                <input type="text" class="form-control" value="{{ $lockedKelas->nama_kelas }}" readonly tabindex="-1">
+            @else
+                <select name="kelas_id" class="form-control">
+                    <option value="">Semua Kelas</option>
+                    @foreach($kelasList as $k)
+                        <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
+                            {{ $k->nama_kelas }}
+                        </option>
+                    @endforeach
+                </select>
+            @endif
         </div>
 
         <div class="form-group" style="margin-bottom:0;min-width:160px;">
@@ -93,29 +103,41 @@
                 @forelse($rows as $i => $row)
                     <tr>
                         <td class="col-no">{{ $i + 1 }}</td>
-                        <td>{{ $row['hari'] }}</td>
-                        <td>{{ $row['tanggal'] }}</td>
-                        <td><strong>{{ $row['nama_siswa'] }}</strong></td>
-                        <td>{{ $row['kelas'] }}</td>
+                        <td class="text-muted-sm" >{{ $row['hari'] }}</td>
+                        <td class="text-muted-sm">{{ $row['tanggal'] }}</td>
+                        <td class="text-muted-sm">{{ $row['nama_siswa'] }}</td>
+                        <td class="text-muted-sm">{{ $row['kelas'] }}</td>
                         <td>
-                            <span style="font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600;
-                                {{ $row['kategori'] === 'Keterlambatan' ? 'background:#fef3c7;color:#92400e;' :
-                                   ($row['kategori'] === 'Dispensasi'   ? 'background:#e0f2fe;color:#075985;' :
-                                                                          'background:#fee2e2;color:#991b1b;') }}">
-                                {{ $row['kategori'] }}
+                            @php
+                                $label = $row['kategori'];
+                                $style = 'background:#fee2e2;color:#991b1b;'; // default (Absensi Alpha-ish)
+                                if ($row['kategori'] === 'Keterlambatan') {
+                                    $style = 'background:#fef3c7;color:#92400e;';
+                                } elseif ($row['kategori'] === 'Dispensasi') {
+                                    $style = 'background:#e0f2fe;color:#075985;';
+                                } elseif ($row['kategori'] === 'Absensi') {
+                                    $sub   = $row['deskripsi'] ?? '';
+                                    $label = $sub ?: '—';
+                                    if (stripos($sub, 'izin') !== false) {
+                                        $style = 'background:#fef3c7;color:#92400e;';
+                                    } elseif (stripos($sub, 'sakit') !== false) {
+                                        $style = 'background:#dbeafe;color:#1e40af;';
+                                    } elseif (stripos($sub, 'alpha') !== false || stripos($sub, 'alfa') !== false) {
+                                        $style = 'background:#fee2e2;color:#991b1b;';
+                                    } else {
+                                        $style = 'background:#e5e7eb;color:#374151;';
+                                    }
+                                }
+                            @endphp
+                            <span style="font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600;{{ $style }}">
+                                {{ $label }}
                             </span>
                         </td>
-                        <td>{{ $row['deskripsi'] }}</td>
+                        <td class="text-muted-sm">{{ $row['deskripsi'] }}</td>
                         <td class="text-muted-sm">{{ $row['keterangan'] }}</td>
                         <td class="text-muted-sm">{{ $row['penginput'] }}</td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="9" class="td-empty">
-                            <i class="ri-file-search-line" style="font-size:32px;display:block;margin-bottom:8px;"></i>
-                            Tidak ada data.
-                        </td>
-                    </tr>
                 @endforelse
             </tbody>
         </table>

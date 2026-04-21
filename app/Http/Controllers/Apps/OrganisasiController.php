@@ -9,6 +9,9 @@ use App\Models\Apps\SiswaOrganisasi;
 use App\Models\Admin\Guru;
 use App\Models\Admin\Siswa;
 use App\Models\Apps\Kelas;
+use App\Imports\OrganisasiImport;
+use App\Imports\AnggotaOrganisasiImport;
+use Maatwebsite\Excel\Facades\Excel;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
@@ -213,5 +216,65 @@ class OrganisasiController extends Controller
 
         return redirect()->route('Organisasi.edit', $id)
             ->with('success', 'Anggota berhasil dihapus.');
+    }
+
+    /**
+     * Import data organisasi dari file Excel.
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:2048'],
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $sebelum = Organisasi::where('status', 1)->count();
+
+            Excel::import(new OrganisasiImport, $request->file('file'));
+
+            $sesudah = Organisasi::where('status', 1)->count();
+            $jumlah  = $sesudah - $sebelum;
+
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal import: ' . $e->getMessage());
+        }
+
+        return redirect()->route('Organisasi.index')->with('success', 'Import berhasil! ' . $jumlah . ' data organisasi berhasil ditambahkan.');
+    }
+
+    /**
+     * Import daftar anggota organisasi dari file Excel.
+     * Kolom: Kelas, Nama Anggota (Nama Siswa).
+     */
+    public function anggotaImport(Request $request, string $id)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:2048'],
+        ]);
+
+        Organisasi::where('status', 1)->findOrFail($id);
+
+        DB::beginTransaction();
+
+        try {
+            $sebelum = SiswaOrganisasi::where('organisasi_id', $id)->where('status', 1)->count();
+
+            Excel::import(new AnggotaOrganisasiImport((int) $id, $this->currentUser()), $request->file('file'));
+
+            $sesudah = SiswaOrganisasi::where('organisasi_id', $id)->where('status', 1)->count();
+            $jumlah  = $sesudah - $sebelum;
+
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal import: ' . $e->getMessage());
+        }
+
+        return redirect()->route('Organisasi.edit', $id)
+            ->with('success', 'Import berhasil! ' . $jumlah . ' anggota berhasil ditambahkan.');
     }
 }

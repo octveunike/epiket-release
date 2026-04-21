@@ -2,12 +2,14 @@
 
 @section('content')
 
+@if(auth()->user()->hasRole(['Admin','Petugas Piket']))
 <div class="page-header">
     <div>
         <div class="breadcrumb">Admin / <a href="{{ route('Absensi.index') }}" style="color:var(--primary);">Data Absensi</a> / Tambah</div>
         <h2>Tambah Absensi</h2>
     </div>
 </div>
+@endif
 
 <div class="card">
     <form action="{{ route('Absensi.store') }}" method="POST">

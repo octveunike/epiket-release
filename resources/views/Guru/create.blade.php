@@ -30,6 +30,13 @@
                 </div>
 
                 <div class="form-group">
+                    <label class="form-label">Mata Pelajaran</label>
+                    <input type="text" name="mata_pelajaran" class="form-control" placeholder="Contoh: Matematika, Bahasa Inggris"
+                        value="{{ old('mata_pelajaran') }}">
+                    @error('mata_pelajaran')<small style="color:#ef4444;">{{ $message }}</small>@enderror
+                </div>
+
+                <div class="form-group">
                     <label class="form-label">User (Akun Login)</label>
                     <select name="user_id" class="form-control">
                         <option value="">-- Tidak Terhubung ke User --</option>

@@ -37,21 +37,23 @@ class GuruController extends Controller
     public function store(Request $request)
     {
         $validation = $request->validate([
-            'nip'      => ['required', 'string', 'max:50', 'unique:guru,nip'],
-            'nama_guru'=> ['required', 'string', 'max:100'],
-            'user_id'  => ['nullable', 'integer', 'exists:users,id'],
+            'nip'           => ['required', 'string', 'max:50', 'unique:guru,nip'],
+            'nama_guru'     => ['required', 'string', 'max:100'],
+            'mata_pelajaran'=> ['nullable', 'string', 'max:255'],
+            'user_id'       => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
         DB::beginTransaction();
 
         try {
             Guru::create([
-                'nip'          => $validation['nip'],
-                'nama_guru'    => $validation['nama_guru'],
-                'user_id'      => $validation['user_id'] ?? null,
-                'status'       => '1',
-                'user_input'   => auth()->user()->id,
-                'tanggal_input'=> date('Y-m-d H:i:s'),
+                'nip'           => $validation['nip'],
+                'nama_guru'     => $validation['nama_guru'],
+                'mata_pelajaran'=> $validation['mata_pelajaran'] ?? null,
+                'user_id'       => $validation['user_id'] ?? null,
+                'status'        => '1',
+                'user_input'    => auth()->user()->id,
+                'tanggal_input' => date('Y-m-d H:i:s'),
             ]);
 
             DB::commit();
@@ -79,9 +81,10 @@ class GuruController extends Controller
     public function update(Request $request, string $id)
     {
         $validation = $request->validate([
-            'nip'      => ['required', 'string', 'max:50', 'unique:guru,nip,' . $id],
-            'nama_guru'=> ['required', 'string', 'max:100'],
-            'user_id'  => ['nullable', 'integer', 'exists:users,id'],
+            'nip'           => ['required', 'string', 'max:50', 'unique:guru,nip,' . $id],
+            'nama_guru'     => ['required', 'string', 'max:100'],
+            'mata_pelajaran'=> ['nullable', 'string', 'max:255'],
+            'user_id'       => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
         DB::beginTransaction();
@@ -91,6 +94,7 @@ class GuruController extends Controller
             $data->update([
                 'nip'           => $validation['nip'],
                 'nama_guru'     => $validation['nama_guru'],
+                'mata_pelajaran'=> $validation['mata_pelajaran'] ?? null,
                 'user_id'       => $validation['user_id'] ?? null,
                 'user_update'   => auth()->user()->id,
                 'tanggal_update'=> date('Y-m-d H:i:s'),

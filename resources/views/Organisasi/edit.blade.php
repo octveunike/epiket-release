@@ -64,9 +64,14 @@
                 </h3>
                 <small style="color:var(--text-muted);">{{ $anggota->count() }} anggota aktif</small>
             </div>
-            <button type="button" class="btn btn-primary" onclick="openTambahModal()">
-                <i class="ri-user-add-line"></i> Tambah Anggota
-            </button>
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="btn btn-import" onclick="openImportAnggotaModal()">
+                    <i class="ri-upload-2-line"></i> Import Anggota
+                </button>
+                <button type="button" class="btn btn-primary" onclick="openTambahModal()">
+                    <i class="ri-user-add-line"></i> Tambah Anggota
+                </button>
+            </div>
         </div>
         <div class="table-responsive">
             <table>
@@ -181,6 +186,44 @@
         </div>
     </div>
 
+    {{-- ── MODAL IMPORT ANGGOTA ── --}}
+    <div class="modal-overlay" id="importAnggotaModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span class="modal-title"><i class="ri-upload-2-line"></i> Import Anggota</span>
+                <button class="modal-close" onclick="closeImportAnggotaModal()"><i class="ri-close-line"></i></button>
+            </div>
+            <form action="{{ route('Organisasi.anggota.import', $Organisasi->id) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body">
+                    <p style="font-size:13.5px; color:var(--text-muted); margin-bottom:16px;">
+                        Download template terlebih dahulu:
+                        <a href="{{ asset('template/anggota_organisasi_template.xlsx') }}" download style="color:var(--primary); font-weight:600;">
+                            <i class="ri-download-line"></i> Download Template
+                        </a>
+                    </p>
+                    <div class="form-group">
+                        <label class="form-label">Pilih File Excel <span class="required">*</span></label>
+                        <label for="importAnggotaFile" class="file-input-wrapper" style="cursor:pointer;">
+                            <span class="file-input-label" style="background:#e2e8f0; color:#475569;">
+                                <i class="ri-file-excel-2-line"></i> Pilih File
+                            </span>
+                            <span class="file-input-filename" id="importAnggotaFileFilename" style="color:#475569;">Belum ada file dipilih</span>
+                            <input type="file" id="importAnggotaFile" name="file" class="file-input-hidden"
+                                accept=".xlsx,.xls,.csv" required>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeImportAnggotaModal()">Batal</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="ri-upload-2-line"></i> Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     {{-- ── MODAL HAPUS ANGGOTA ── --}}
     <div class="modal-overlay" id="hapusAnggotaModal">
         <div class="modal-box">
@@ -264,8 +307,20 @@
         document.getElementById('hapusAnggotaModal').classList.remove('active');
     }
 
+    // ── Import Anggota ──────────────────────────────
+    function openImportAnggotaModal() {
+        document.getElementById('importAnggotaModal').classList.add('active');
+    }
+    function closeImportAnggotaModal() {
+        document.getElementById('importAnggotaModal').classList.remove('active');
+        document.getElementById('importAnggotaFile').value = '';
+        const filename = document.getElementById('importAnggotaFileFilename');
+        filename.textContent = 'Belum ada file dipilih';
+        filename.classList.remove('has-file');
+    }
+
     // Backdrop click
-    ['tambahAnggotaModal','hapusAnggotaModal'].forEach(id => {
+    ['tambahAnggotaModal','hapusAnggotaModal','importAnggotaModal'].forEach(id => {
         document.getElementById(id).addEventListener('click', function(e) {
             if (e.target === this) this.classList.remove('active');
         });

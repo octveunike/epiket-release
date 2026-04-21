@@ -19,6 +19,9 @@ class UserManagementController extends Controller
      */
     public function index()
     {
+        if (!auth()->user()->hasRole('Admin')) {
+            abort(403);
+        }
         $data = User::with('roles')->where('status', 1)->get();
         return view('UserManagement.index', compact('data'));
     }
@@ -28,6 +31,9 @@ class UserManagementController extends Controller
      */
     public function create()
     {
+        if (!auth()->user()->hasRole('Admin')) {
+            abort(403);
+        }
         $roles = Roles::where('status', 1)->get();
         return view('UserManagement.create', compact('roles'));
     }
@@ -38,6 +44,9 @@ class UserManagementController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->hasRole('Admin')) {
+            abort(403);
+        }
         $request->validate([
             'nama'       => ['required', 'string', 'max:100'],
             'username'   => ['required', 'string', 'max:50', 'unique:users,username'],
@@ -92,11 +101,19 @@ class UserManagementController extends Controller
      */
     public function edit(string $id)
     {
+        $authUser = auth()->user();
+        $isAdmin  = $authUser->hasRole('Admin');
+
+        if (!$isAdmin && (int) $authUser->id !== (int) $id) {
+            abort(403, 'Anda hanya dapat mengedit akun Anda sendiri.');
+        }
+
         $User        = User::with('roles')->findOrFail($id);
         $roles       = Roles::where('status', 1)->get();
         $activeRoles = $User->roles->pluck('id')->toArray();
+        $canEditRole = $isAdmin;
 
-        return view('UserManagement.edit', compact('User', 'roles', 'activeRoles'));
+        return view('UserManagement.edit', compact('User', 'roles', 'activeRoles', 'canEditRole'));
     }
 
     /**
@@ -106,19 +123,28 @@ class UserManagementController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $request->validate([
-            'nama'       => ['required', 'string', 'max:100'],
-            'username'   => ['required', 'string', 'max:50', 'unique:users,username,' . $id],
-            'email'      => ['required', 'email', 'max:100', 'unique:users,email,' . $id],
-            'password'   => ['nullable', 'string', 'min:6', 'confirmed'],
-            'role_ids'   => ['nullable', 'array'],
-            'role_ids.*' => ['integer', 'exists:roles,id'],
-        ]);
+        $authUser = auth()->user();
+        $isAdmin  = $authUser->hasRole('Admin');
 
-        $user = auth()->user();
-        $currentUser = $user->username
-            ?? $user->nama
-            ?? $user->email
+        if (!$isAdmin && (int) $authUser->id !== (int) $id) {
+            abort(403, 'Anda hanya dapat mengedit akun Anda sendiri.');
+        }
+
+        $rules = [
+            'nama'     => ['required', 'string', 'max:100'],
+            'username' => ['required', 'string', 'max:50', 'unique:users,username,' . $id],
+            'email'    => ['required', 'email', 'max:100', 'unique:users,email,' . $id],
+            'password' => ['nullable', 'string', 'min:6', 'confirmed'],
+        ];
+        if ($isAdmin) {
+            $rules['role_ids']   = ['nullable', 'array'];
+            $rules['role_ids.*'] = ['integer', 'exists:roles,id'];
+        }
+        $request->validate($rules);
+
+        $currentUser = $authUser->username
+            ?? $authUser->nama
+            ?? $authUser->email
             ?? 'system';
 
         DB::beginTransaction();
@@ -134,29 +160,29 @@ class UserManagementController extends Controller
                 'tanggal_update' => date('Y-m-d H:i:s'),
             ];
 
-            // Hanya update password kalau field diisi
             if ($request->filled('password')) {
                 $updateData['password'] = Hash::make($request->password);
             }
 
             $user->update($updateData);
 
-            // Soft-delete semua user_role lama milik user ini
-            UserRole::where('user_id', $id)->update([
-                'status'         => 9,
-                'user_update'    => $currentUser,
-                'tanggal_update' => date('Y-m-d H:i:s'),
-            ]);
-
-            // Insert ulang role yang baru dipilih
-            foreach ($request->input('role_ids', []) as $roleId) {
-                UserRole::create([
-                    'user_id'       => (int) $id,
-                    'role_id'       => (int) $roleId,
-                    'status'        => 1,
-                    'user_input'    => $currentUser,
-                    'tanggal_input' => date('Y-m-d H:i:s'),
+            // Role hanya bisa diubah oleh Admin.
+            if ($isAdmin) {
+                UserRole::where('user_id', $id)->update([
+                    'status'         => 9,
+                    'user_update'    => $currentUser,
+                    'tanggal_update' => date('Y-m-d H:i:s'),
                 ]);
+
+                foreach ($request->input('role_ids', []) as $roleId) {
+                    UserRole::create([
+                        'user_id'       => (int) $id,
+                        'role_id'       => (int) $roleId,
+                        'status'        => 1,
+                        'user_input'    => $currentUser,
+                        'tanggal_input' => date('Y-m-d H:i:s'),
+                    ]);
+                }
             }
 
             DB::commit();
@@ -165,7 +191,8 @@ class UserManagementController extends Controller
             return redirect()->back()->with('error', $e->getMessage());
         }
 
-        return redirect()->route('UserManagement.index')->with('success', 'User berhasil diupdate');
+        $redirectRoute = $isAdmin ? 'UserManagement.index' : 'admin.index';
+        return redirect()->route($redirectRoute)->with('success', 'Data berhasil diperbarui.');
     }
 
     /**
@@ -174,6 +201,9 @@ class UserManagementController extends Controller
      */
     public function destroy(string $id)
     {
+        if (!auth()->user()->hasRole('Admin')) {
+            abort(403);
+        }
         $currentUser = auth()->user()->username ?? auth()->user()->nama ?? auth()->user()->email;
 
         DB::beginTransaction();

@@ -88,8 +88,8 @@
                             </td>
                             <td class="col-center">
                                 <a href="{{ route('Absensi.show', $absensi->id) }}"
-                                    class="btn btn-sm btn-secondary">
-                                    <i class="ri-eye-line"></i> Detail
+                                    class="btn btn-sm btn-info">
+                                    <i class="ri-eye-line"></i> Detail Absensi
                                 </a>
                                 <a href="{{ route('Absensi.isiAbsensi', $absensi->id) }}"
                                     class="btn btn-sm btn-primary">
@@ -142,9 +142,9 @@
                         </td>
                         <td class="col-center">
                             <a href="{{ route('Absensi.show', $absensi->id) }}"
-                                class="btn btn-sm btn-secondary">
-                                <i class="ri-eye-line"></i> Detail
-                            </a>
+                                    class="btn btn-sm btn-info">
+                                    <i class="ri-eye-line"></i> Detail Absensi
+                                </a>
                         </td>
                     </tr>
                 @empty

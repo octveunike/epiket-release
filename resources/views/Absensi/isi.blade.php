@@ -95,7 +95,7 @@
                     <option value="">-- Pilih --</option>
                     @foreach ($jam as $j)
                         <option value="{{ $j->id }}" data-idx="{{ $loop->index }}">
-                            {{ $j->jam_ke }} ({{ \Carbon\Carbon::parse($j->waktu_mulai)->format('H:i') }})
+                            {{ $j->jam_ke }} ({{ \Carbon\Carbon::parse($j->waktu_selesai)->format('H:i') }})
                         </option>
                     @endforeach
                 </select>
@@ -180,52 +180,62 @@
 
 @push('scripts')
 @php
-$jamDataArr = $jam->values()->map(fn($j,$i) => [
-    'id'    => $j->id,
-    'idx'   => $i,
-    'label' => 'Jam '.$j->jam_ke.' ('.\Carbon\Carbon::parse($j->waktu_mulai)->format('H:i').')',
+$jamDataArr = $jam->values()->map(fn($j, $i) => [
+    'id'            => $j->id,
+    'idx'           => $i,
+    'jam_ke'        => $j->jam_ke,
+    'waktu_mulai'   => \Carbon\Carbon::parse($j->waktu_mulai)->format('H:i'),
+    'waktu_selesai' => \Carbon\Carbon::parse($j->waktu_selesai)->format('H:i'),
+    'label'         => 'Jam '.$j->jam_ke.' ('.\Carbon\Carbon::parse($j->waktu_mulai)->format('H:i').')',
 ])->values();
+
 $siswaDataArr = $siswa->map(fn($s) => ['id' => $s->id, 'nama_siswa' => $s->nama_siswa])->values();
 
-/*
- * Mapping status_absensi_id → kode huruf  (sesuai tabel status_absensi)
- * 1 = Izin
- * 2 = Sakit
- * 3 = Alpha
- * 4 = Dispen
- * 5 = Terlambat
- *
- * Hadir = tidak ada record di absensi_detail (atau is_full_day=1 tanpa status khusus)
- *
- * Logika submit:
- * - Hadir biasa          → status_absensi_id = NULL / tidak di-submit sebagai ketidakhadiran
- * - Izin seharian        → I(1), is_full_day=1
- * - Sakit seharian       → S(2), is_full_day=1
- * - Alpha                → A(3), is_full_day=1
- * - Izin/Sakit per jam   → status_absensi_id = NULL (tetap hadir), is_full_day=0, keterangan bebas
- */
+// Rentang waktu seharian dari tabel jam_absensi (dinamis)
+$jamPertama      = $jam->sortBy('jam_ke')->first();
+$jamTerakhir     = $jam->sortByDesc('jam_ke')->first();
+$waktuSehariData = [
+    'mulai'   => $jamPertama  ? \Carbon\Carbon::parse($jamPertama->waktu_mulai)->format('H:i')   : '06:30',
+    'selesai' => $jamTerakhir ? \Carbon\Carbon::parse($jamTerakhir->waktu_selesai)->format('H:i') : '09:30',
+];
+
 $statusMap = [1 => 'I', 2 => 'S', 3 => 'A', 4 => 'D', 5 => 'T'];
 
-$preEntries = $sudahTercatat->map(fn($d) => [
-    'siswaId'      => $d->siswa_id,
-    'nama'         => $d->siswa->nama_siswa ?? '—',
-    'status'       => $statusMap[$d->status_absensi_id] ?? 'H',
-    'statusDisplay'=> $statusMap[$d->status_absensi_id] ?? 'H',
-    'isFullDay'    => (bool) $d->is_full_day,
-    'tipe'         => null,
-    'jamsIds'      => [],
-    'jamLabel'     => '',
-    'waktuDisplay' => (bool) $d->is_full_day ? 'Seharian' : 'Per Jam',
-    'keterangan'   => $d->keterangan ?? '',
-    'lampiranNama' => '',
-    'locked'       => true,
-])->values();
+$preEntries = $sudahTercatat->map(function ($d) use ($statusMap, $waktuSehariData) {
+    // Hitung waktuDisplay untuk per jam dari relasi jams
+    if ($d->is_full_day) {
+        $waktuDisplay = $waktuSehariData['mulai'] . ' – ' . $waktuSehariData['selesai'];
+    } else {
+        $jamsSorted = $d->jams->filter(fn($j) => $j->jam)->sortBy('jam.jam_ke');
+        $jamAwal    = $jamsSorted->first()?->jam;
+        $jamAkhir   = $jamsSorted->last()?->jam;
+        $waktuDisplay = ($jamAwal && $jamAkhir)
+            ? \Carbon\Carbon::parse($jamAwal->waktu_mulai)->format('H:i') . ' – ' . \Carbon\Carbon::parse($jamAkhir->waktu_selesai)->format('H:i')
+            : 'Per Jam';
+    }
+
+    return [
+        'siswaId'       => $d->siswa_id,
+        'nama'          => $d->siswa->nama_siswa ?? '—',
+        'status'        => $statusMap[$d->status_absensi_id] ?? 'H',
+        'statusDisplay' => $statusMap[$d->status_absensi_id] ?? 'H',
+        'isFullDay'     => (bool) $d->is_full_day,
+        'tipe'          => null,
+        'jamsIds'       => [],
+        'jamLabel'      => '',
+        'waktuDisplay'  => $waktuDisplay,
+        'keterangan'    => $d->keterangan ?? '',
+        'lampiranNama'  => '',
+        'locked'        => true,
+    ];
+})->values();
 @endphp
 <script>
-const jamData  = {!! json_encode($jamDataArr) !!};
-const allSiswa = {!! json_encode($siswaDataArr) !!};
-let entries    = {!! json_encode($preEntries) !!};
-let curStatus  = '';   // 'I' | 'S' | 'A'
+const jamData     = {!! json_encode($jamDataArr) !!};
+const waktuSehari = {!! json_encode($waktuSehariData) !!};
+const allSiswa    = {!! json_encode($siswaDataArr) !!};
+let entries       = {!! json_encode($preEntries) !!};
+let curStatus     = '';
 
 document.addEventListener('DOMContentLoaded', () => {
     renderEntryList();
@@ -256,41 +266,32 @@ function resetForm() {
     document.getElementById('siswaEl').value = '';
     curStatus = '';
     document.querySelectorAll('#stPills .st-pill').forEach(p => p.classList.remove('sel'));
-
-    // Reset toggle seharian
     const toggleRow = document.getElementById('toggleFullDayRow');
     toggleRow.style.opacity       = '';
     toggleRow.style.pointerEvents = '';
-    document.getElementById('fdCheck').checked             = true;
-    document.getElementById('fdSubLbl').textContent        = 'Tidak Hadir Seharian';
-    document.getElementById('jamInline').style.display     = 'none';
-    document.getElementById('jamDari').value               = '';
-    document.getElementById('jamSampai').value             = '';
-
-    // Reset keterangan & file
-    document.getElementById('ketEl').value = '';
+    document.getElementById('fdCheck').checked         = true;
+    document.getElementById('fdSubLbl').textContent    = 'Tidak Hadir Seharian';
+    document.getElementById('jamInline').style.display = 'none';
+    document.getElementById('jamDari').value           = '';
+    document.getElementById('jamSampai').value         = '';
+    document.getElementById('ketEl').value             = '';
     clearFile();
 }
 
-// ── Pilih status (Izin / Sakit / Alpha) ──────────────────
+// ── Pilih status ──────────────────────────────────────────
 function selectStatus(s, el) {
     curStatus = s;
     document.querySelectorAll('#stPills .st-pill').forEach(p => p.classList.remove('sel'));
     el.classList.add('sel');
-
     const toggleRow = document.getElementById('toggleFullDayRow');
     const fdCheck   = document.getElementById('fdCheck');
-    const jamSec    = document.getElementById('jamSec');
-
     if (s === 'A') {
-        // Alpha: disable toggle, paksa seharian, tutup jam inline
         toggleRow.style.opacity       = '0.4';
         toggleRow.style.pointerEvents = 'none';
         fdCheck.checked = true;
         document.getElementById('jamInline').style.display = 'none';
         document.getElementById('fdSubLbl').textContent    = 'Tidak Hadir Seharian';
     } else {
-        // Izin / Sakit: aktifkan kembali toggle
         toggleRow.style.opacity       = '';
         toggleRow.style.pointerEvents = '';
     }
@@ -298,13 +299,11 @@ function selectStatus(s, el) {
 
 // ── Toggle seharian ───────────────────────────────────────
 function toggleFullDay() {
-    const cb     = document.getElementById('fdCheck');
+    const cb   = document.getElementById('fdCheck');
     if (event && event.target !== cb) cb.checked = !cb.checked;
     const perJam = !cb.checked;
-
     document.getElementById('jamInline').style.display = perJam ? 'flex' : 'none';
     document.getElementById('fdSubLbl').textContent    = cb.checked ? 'Tidak Hadir Seharian' : 'Tidak Hadir di Waktu :';
-
     if (cb.checked) {
         document.getElementById('jamDari').value   = '';
         document.getElementById('jamSampai').value = '';
@@ -315,14 +314,14 @@ function toggleFullDay() {
 function handleFile(input) {
     if (!input.files.length) return;
     if (input.files[0].size > 5 * 1024 * 1024) { alert('Ukuran file maks 5 MB!'); input.value = ''; return; }
-    document.getElementById('fileName').textContent    = input.files[0].name;
+    document.getElementById('fileName').textContent     = input.files[0].name;
     document.getElementById('fileEmpty').style.display  = 'none';
     document.getElementById('filePreview').style.display = 'flex';
 }
 function clearFile() {
-    document.getElementById('fileEl').value              = '';
-    document.getElementById('fileEmpty').style.display   = 'flex';
-    document.getElementById('filePreview').style.display = 'none';
+    document.getElementById('fileEl').value               = '';
+    document.getElementById('fileEmpty').style.display    = 'flex';
+    document.getElementById('filePreview').style.display  = 'none';
 }
 
 // ── Tambahkan entry ───────────────────────────────────────
@@ -334,9 +333,9 @@ function addEntry() {
     if (entries.find(e => e.siswaId === siswaId)) { alert('Siswa sudah ditambahkan!'); return; }
 
     const isFullDay = document.getElementById('fdCheck').checked;
-    let jamsIds  = [];
-    let jamLabel = '';
-    let waktuDisplay = 'Seharian';
+    let jamsIds      = [];
+    let jamLabel     = '';
+    let waktuDisplay = waktuSehari.mulai + ' – ' + waktuSehari.selesai; // default seharian
 
     if (!isFullDay && curStatus !== 'A') {
         const dariId   = document.getElementById('jamDari').value;
@@ -349,19 +348,12 @@ function addEntry() {
 
         jamsIds      = jamData.filter(j => j.idx >= dariObj.idx && j.idx <= sampaiObj.idx).map(j => j.id);
         jamLabel     = dariObj.label + '–' + sampaiObj.label;
-        waktuDisplay = dariObj.label + ' – ' + sampaiObj.label;
+        waktuDisplay = dariObj.waktu_mulai + ' – ' + sampaiObj.waktu_selesai;
     }
 
-    // Keterangan: input user saja
     const keteranganFinal = document.getElementById('ketEl').value.trim();
-
-    // Status yang disimpan ke DB:
-    // - Alpha           → A (3)
-    // - Izin seharian   → I (1)
-    // - Sakit seharian  → S (2)
-    // - Izin/Sakit per jam → null (tetap hadir, tidak ada status_absensi_id)
-    const isPerJam     = (!isFullDay && curStatus !== 'A');
-    const statusSimpan = isPerJam ? null : curStatus;
+    const isPerJam        = (!isFullDay && curStatus !== 'A');
+    const statusSimpan    = isPerJam ? null : curStatus;
 
     entries.push({
         siswaId,
@@ -392,7 +384,6 @@ function deleteEntry(siswaId) {
 
 // ── Update counter pills ──────────────────────────────────
 function updatePills() {
-    // Absen = Alpha, Izin, Sakit seharian (per jam tetap dihitung hadir)
     const absenCount = entries.filter(e =>
         ['A', 'I', 'S'].includes(e.statusDisplay ?? e.status) && e.isFullDay
     ).length;
@@ -409,7 +400,7 @@ function refreshSiswaSelect() {
     });
 }
 
-// ── Render tabel — hanya yang ada catatan ────────────────
+// ── Render tabel ──────────────────────────────────────────
 function renderEntryList() {
     const tbody   = document.getElementById('entryTbody');
     const card    = document.getElementById('entryCard');
@@ -442,22 +433,23 @@ function renderEntryList() {
             statusCell = `
                 <span style="${bdStyle.H}padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;">Hadir</span>
                 <span style="${bdStyle.T}padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;margin-left:4px;">Terlambat</span>`;
-
         } else if (e.status === null && !e.isFullDay) {
             const subLbl   = stLbl[e.statusDisplay] ?? '';
             const subStyle = bdStyle[e.statusDisplay] ?? '';
             statusCell = `
                 <span style="${bdStyle.H}padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;">Hadir</span>
                 <span style="${subStyle}padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;margin-left:4px;">${subLbl}</span>`;
-
         } else {
             const d = e.statusDisplay ?? e.status;
             statusCell = `<span style="${bdStyle[d]??''}padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;">${stLbl[d]??d}</span>`;
         }
 
-        const waktu = e.isFullDay
-            ? '<span style="font-size:12px;color:var(--text-muted);font-weight:600;">Seharian</span>'
-            : `<span style="color:#f59e0b;font-size:12px;font-weight:600;">${e.waktuDisplay ?? 'Per Jam'}</span>`;
+        // Tampilkan rentang waktu: seharian dari DB, per jam dari pilihan
+        const waktuStr = e.isFullDay
+            ? `${waktuSehari.mulai} – ${waktuSehari.selesai}`
+            : (e.waktuDisplay ?? 'Per Jam');
+
+        const waktu = `<span style="font-size:12px;color:var(--text-muted);font-weight:600;">${waktuStr}</span>`;
 
         const sumberCell = e.locked
             ? `<span style="background:#e0f2fe;color:#075985;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">Auto</span>`
@@ -488,25 +480,16 @@ function simpan() {
     const container = document.getElementById('f_detail_container');
     container.innerHTML = '';
     let idx = 0;
-
-    // Mapping kode → status_absensi_id:
-    // I=1(Izin), S=2(Sakit), A=3(Alpha), D=4(Dispen), T=5(Terlambat)
-    // null = per jam (hadir dengan catatan jam, tidak ada status khusus)
     const stMap = { I:1, S:2, A:3, D:4, T:5 };
 
     entries.forEach(e => {
-        // Skip locked (sudah ada di DB dari keterlambatan/dispensasi)
         if (e.locked) return;
-
         addHidden(container, `detail[${idx}][siswa_id]`,    e.siswaId);
         addHidden(container, `detail[${idx}][is_full_day]`, e.isFullDay ? 1 : 0);
         addHidden(container, `detail[${idx}][keterangan]`,  e.keterangan);
-
-        // Per jam (status null) = hadir dengan catatan, tidak perlu status_absensi_id
         if (e.status !== null) {
             addHidden(container, `detail[${idx}][status_absensi_id]`, stMap[e.status] ?? '');
         }
-
         e.jamsIds.forEach(jamId => addHidden(container, `detail[${idx}][jams][]`, jamId));
         idx++;
     });
@@ -515,10 +498,10 @@ function simpan() {
 }
 
 function addHidden(parent, name, value) {
-    const inp   = document.createElement('input');
-    inp.type    = 'hidden';
-    inp.name    = name;
-    inp.value   = value ?? '';
+    const inp = document.createElement('input');
+    inp.type  = 'hidden';
+    inp.name  = name;
+    inp.value = value ?? '';
     parent.appendChild(inp);
 }
 </script>

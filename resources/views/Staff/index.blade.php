@@ -43,7 +43,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse ($data as $val)
+                @foreach ($data as $val)
                     <tr>
                         <td style="text-align:center;">{{ $loop->iteration }}</td>
                         <td>{{ $val->nama_staff }}</td>
@@ -63,14 +63,7 @@
                             </button>
                         </td>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="4" class="td-empty">
-                            <i class="ri-inbox-line" style="font-size:32px;display:block;margin-bottom:8px;"></i>
-                            Belum ada data staf
-                        </td>
-                    </tr>
-                @endforelse
+                @endforeach
             </tbody>
         </table>
     </div>
