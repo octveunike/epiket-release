@@ -11,6 +11,7 @@ use App\Models\Apps\AbsensiDetailJam;
 use App\Models\Apps\PeriodeAkademik;
 use App\Models\Reference\JamAbsensi;
 use App\Models\Reference\StatusVerifikasi;
+use App\Services\DispensasiPropagator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Exception;
@@ -99,8 +100,60 @@ class AbsensiController extends Controller
             'tanggal_input'        => date('Y-m-d H:i:s'),
         ]);
 
+        DispensasiPropagator::applyApprovedDispensasiToAbsensi($absensi, auth()->user()->id);
+
         return redirect()->route('Absensi.isiAbsensi', $absensi->id)
             ->with('success', 'Data absensi berhasil ditambahkan. Silakan isi absensi.');
+    }
+
+    public function generate(Request $request)
+    {
+        if (!auth()->user()->hasRole(['Admin', 'Petugas Piket'])) {
+            abort(403, 'Hanya Admin / Petugas Piket yang dapat menggenerate absensi.');
+        }
+
+        $periodeAktif = PeriodeAkademik::where('status', 1)->first();
+
+        if (!$periodeAktif) {
+            return back()->with('error', 'Tidak ada periode akademik aktif.');
+        }
+
+        $statusBelumDiisi = StatusVerifikasi::where('nama_status', 'Menunggu Pengisian')
+                                ->where('status', 1)->first();
+
+        $kelas = Kelas::where('status', 1)->get();
+        $today = date('Y-m-d');
+        $count = 0;
+
+        foreach ($kelas as $k) {
+            $absensi = Absensi::firstOrCreate(
+                [
+                    'kelas_id' => $k->id,
+                    'tanggal'  => $today,
+                ],
+                [
+                    'status_verifikasi_id' => $statusBelumDiisi?->id,
+                    'periode_akademik_id'  => $periodeAktif->id,
+                    'status'               => '1',
+                    'user_input'           => auth()->user()->id,
+                    'tanggal_input'        => date('Y-m-d H:i:s'),
+                ]
+            );
+
+            if ($absensi->wasRecentlyCreated) {
+                // If there are approved dispensations for today, apply them
+                DispensasiPropagator::applyApprovedDispensasiToAbsensi($absensi, auth()->user()->id);
+                $count++;
+            }
+        }
+
+        if ($count > 0) {
+            return redirect()->route('Absensi.index')
+                ->with('success', "$count data absensi hari ini berhasil digenerate.");
+        }
+
+        return redirect()->route('Absensi.index')
+            ->with('success', 'Semua data absensi untuk hari ini sudah ada, tidak ada data baru yang dibuat.');
     }
 
     public function isiAbsensi(string $id)

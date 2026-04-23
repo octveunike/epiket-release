@@ -1,4 +1,5 @@
 # Laravel
+
 /vendor
 /node_modules
 /public/build
@@ -6,31 +7,45 @@
 /public/storage
 /storage/*.key
 /storage/*.log
+/storage/logs/*
 /storage/framework/cache/*
 /storage/framework/sessions/*
 /storage/framework/views/*
+/storage/framework/testing/*
 
 # Env
+
 .env
 .env.backup
 .env.production
 
 # PHPUnit
+
 /.phpunit.cache
 .phpunit.result.cache
 
 # Logs
+
 npm-debug.log
 yarn-error.log
 
 # IDE
+
 /.fleet
 /.idea
 /.vscode
 
 # Playwright
+
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Misc
+
+.DS_Store
+Thumbs.db
+.cache
+*.stackdump

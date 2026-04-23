@@ -40,6 +40,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/',          [App\Http\Controllers\Apps\AbsensiController::class, 'index'])->name('index');
         Route::get('/add',       [App\Http\Controllers\Apps\AbsensiController::class, 'create'])->name('create');
         Route::post('/add',      [App\Http\Controllers\Apps\AbsensiController::class, 'store'])->name('store');
+        Route::post('/generate', [App\Http\Controllers\Apps\AbsensiController::class, 'generate'])->name('generate');
 
         // ⚠️ Wali Kelas routes HARUS di atas /{id} agar tidak tertangkap wildcard
         Route::prefix('wali')->name('walikelas.')->group(function () {
@@ -142,6 +143,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/user-management',           [App\Http\Controllers\UserManagement\UserManagementController::class, 'index'])->name('UserManagement.index');
     Route::get('/user-management/add',       [App\Http\Controllers\UserManagement\UserManagementController::class, 'create'])->name('UserManagement.create');
     Route::post('/user-management/add',      [App\Http\Controllers\UserManagement\UserManagementController::class, 'store'])->name('UserManagement.store');
+    Route::post('/user-management/inline',   [App\Http\Controllers\UserManagement\UserManagementController::class, 'storeInline'])->name('UserManagement.storeInline');
     Route::get('/user-management/{id}/edit', [App\Http\Controllers\UserManagement\UserManagementController::class, 'edit'])->name('UserManagement.edit');
     Route::put('/user-management/{id}',      [App\Http\Controllers\UserManagement\UserManagementController::class, 'update'])->name('UserManagement.update');
     Route::delete('/user-management/{id}',   [App\Http\Controllers\UserManagement\UserManagementController::class, 'destroy'])->name('UserManagement.destroy');

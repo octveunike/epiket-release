@@ -99,7 +99,7 @@ class DispensasiController extends Controller
         ]);
 
         return redirect()->route('Dispensasi.show', $dispensasi->id)
-            ->with('success', 'Dispensasi berhasil dibuat. Silakan tambahkan siswa.');
+            ->with('success', 'Dispensasi berhasil dibuat. Silakan tambahkan data siswa yang dispen.');
     }
 
     public function storeDetail(Request $request, string $id)
@@ -138,31 +138,11 @@ class DispensasiController extends Controller
         ]);
 
         $statusDisetujuiId = StatusVerifikasi::where('nama_status', 'Disetujui')->where('status', 1)->value('id');
-        $statusMenungguId  = StatusVerifikasi::where('nama_status', 'Menunggu Piket')->where('status', 1)->value('id');
 
-        $creatorIsPetugasPiket = $user->hasRole('Petugas Piket')
-            && (int) $dispensasi->user_input === (int) $user->id;
-
-        if ($creatorIsPetugasPiket && (int) $dispensasi->status_verifikasi_id === (int) $statusMenungguId) {
-            // Petugas Piket membuat dispensasi sendiri → auto Disetujui begitu ada anggota,
-            // lalu propagate semua siswa (termasuk yang baru ditambahkan).
-            DB::transaction(function () use ($dispensasi, $statusDisetujuiId, $user) {
-                $allSiswaIds = DispensasiDetail::where('dispensasi_id', $dispensasi->id)
-                    ->where('status', 1)
-                    ->pluck('siswa_id')
-                    ->map(fn($v) => (int) $v)
-                    ->all();
-
-                $this->propagateDispensasiToAbsensi($dispensasi, $allSiswaIds);
-
-                $dispensasi->update([
-                    'status_verifikasi_id' => $statusDisetujuiId,
-                    'user_update'          => $user->id,
-                    'tanggal_update'       => date('Y-m-d H:i:s'),
-                ]);
-            });
-        } elseif ((int) $dispensasi->status_verifikasi_id === (int) $statusDisetujuiId) {
-            // Dispensasi sudah Disetujui sebelumnya → propagate hanya siswa yang baru ditambahkan.
+        // Jika dispensasi sudah Disetujui sebelumnya (late-add), propagate hanya siswa baru ini.
+        // Flow normal (baik Ketua Kelas maupun Petugas Piket): tambah semua siswa dulu,
+        // lalu klik tombol "Verifikasi & Update Absensi" untuk propagate + approve sekaligus.
+        if ((int) $dispensasi->status_verifikasi_id === (int) $statusDisetujuiId) {
             $this->propagateDispensasiToAbsensi($dispensasi, [(int) $request->siswa_id]);
         }
 

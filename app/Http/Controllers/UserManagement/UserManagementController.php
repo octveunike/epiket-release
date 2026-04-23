@@ -96,6 +96,44 @@ class UserManagementController extends Controller
     }
 
     /**
+     * Inline create user dari form lain (Siswa/Guru) — return JSON.
+     * Tidak assign role apapun; role Ketua Kelas / Wali Kelas akan terpicu
+     * otomatis lewat kelas.ketua_kelas_id / kelas.wali_kelas_id.
+     */
+    public function storeInline(Request $request)
+    {
+        if (!auth()->user()->hasRole('Admin')) {
+            return response()->json(['message' => 'Hanya Admin yang dapat membuat user.'], 403);
+        }
+
+        $validated = $request->validate([
+            'nama'     => ['required', 'string', 'max:100'],
+            'username' => ['required', 'string', 'max:50', 'unique:users,username'],
+            'email'    => ['required', 'email', 'max:100', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:6'],
+        ]);
+
+        $actor       = auth()->user();
+        $currentUser = $actor->username ?? $actor->nama ?? $actor->email ?? 'system';
+
+        $user = User::create([
+            'nama'          => $validated['nama'],
+            'username'      => $validated['username'],
+            'email'         => $validated['email'],
+            'password'      => Hash::make($validated['password']),
+            'status'        => 1,
+            'user_input'    => $currentUser,
+            'tanggal_input' => date('Y-m-d H:i:s'),
+        ]);
+
+        return response()->json([
+            'id'       => $user->id,
+            'nama'     => $user->nama,
+            'username' => $user->username,
+        ], 201);
+    }
+
+    /**
      * Show form edit user.
      * $activeRoles = array of role_id yang aktif (status=1) milik user ini
      */

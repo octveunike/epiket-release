@@ -4,7 +4,13 @@
 
     <div class="page-header">
         <div>
-            <div class="breadcrumb">Admin / <a href="{{ route('Guru.index') }}" style="color:var(--primary);">Data Guru</a> / Edit</div>
+            <div class="breadcrumb">
+                Admin /
+                @if (request('return_to') === 'kelas_edit' && request('kelas_id'))
+                    <a href="{{ route('Kelas.edit', request('kelas_id')) }}" style="color:var(--primary);">Edit Kelas</a> /
+                @endif
+                <a href="{{ route('Guru.index') }}" style="color:var(--primary);">Data Guru</a> / Edit
+            </div>
             <h2>Edit Guru</h2>
         </div>
     </div>
@@ -17,7 +23,7 @@
     @endif
 
     <div class="card">
-        <form method="POST" action="{{ route('Guru.update', $Guru->id) }}">
+        <form method="POST" action="{{ route('Guru.update', $Guru->id) }}{{ request('return_to') === 'kelas_edit' && request('kelas_id') ? '?return_to=kelas_edit&kelas_id=' . request('kelas_id') : '' }}">
             @csrf
             @method('PUT')
 
@@ -46,26 +52,40 @@
 
                 <div class="form-group">
                     <label class="form-label">User (Akun Login)</label>
-                    <select name="user_id" class="form-control">
-                        <option value="">-- Tidak Terhubung ke User --</option>
-                        @foreach ($users as $u)
-                            <option value="{{ $u->id }}" {{ old('user_id', $Guru->user_id) == $u->id ? 'selected' : '' }}>
-                                {{ $u->name }} ({{ $u->email }})
-                            </option>
-                        @endforeach
-                    </select>
+                    <div style="display:flex; gap:8px; align-items:stretch;">
+                        <select name="user_id" id="guru-user-select" class="form-control" style="flex:1;">
+                            <option value="">-- Tidak Terhubung ke User --</option>
+                            @foreach ($users as $u)
+                                <option value="{{ $u->id }}" {{ old('user_id', $Guru->user_id) == $u->id ? 'selected' : '' }}>
+                                    {{ $u->nama }} ({{ $u->username }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn btn-secondary" onclick="openBuatAkunModal()" style="white-space:nowrap;">
+                            <i class="ri-user-add-line"></i> Buat Akun User
+                        </button>
+                    </div>
+                    <small style="color:var(--text-muted);">Diperlukan kalau guru ini ditunjuk jadi Wali Kelas.</small>
                     @error('user_id')<small style="color:#ef4444;">{{ $message }}</small>@enderror
                 </div>
 
             </div>
 
+            @include('Guru._buat-akun-modal')
+
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">
                     <i class="ri-save-line"></i> Simpan Perubahan
                 </button>
-                <a href="{{ route('Guru.index') }}" class="btn btn-secondary">
-                    <i class="ri-arrow-left-line"></i> Batal
-                </a>
+                @if (request('return_to') === 'kelas_edit' && request('kelas_id'))
+                    <a href="{{ route('Kelas.edit', request('kelas_id')) }}" class="btn btn-secondary">
+                        <i class="ri-arrow-left-line"></i> Batal
+                    </a>
+                @else
+                    <a href="{{ route('Guru.index') }}" class="btn btn-secondary">
+                        <i class="ri-arrow-left-line"></i> Batal
+                    </a>
+                @endif
             </div>
 
         </form>

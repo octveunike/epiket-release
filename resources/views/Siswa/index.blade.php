@@ -41,6 +41,7 @@
                     <th>Jenis Kelamin</th>
                     <th>Tanggal Masuk</th>
                     <th>Kelas</th>
+                    <th>Akun Login</th>
                     <th>Status</th>
                     <th class="col-center">Aksi</th>
                 </tr>
@@ -56,6 +57,13 @@
                             {{ date('d M Y', strtotime($val->tanggal_masuk)) }}
                         </td>
                         <td>{{ $val->kelas->nama_kelas ?? '-' }}</td>
+                        <td>
+                            @if ($val->user)
+                                <span class="badge badge-info">{{ $val->user->username }}</span>
+                            @else
+                                <span style="color:var(--text-muted); font-size:12px;">—</span>
+                            @endif
+                        </td>
                         <td>
                             @if ($val->status_siswa_id == 1)
                                 <span class="badge badge-success">Aktif</span>

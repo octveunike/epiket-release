@@ -62,7 +62,6 @@
                 <tr>
                     <th class="col-no">No</th>
                     <th>Kegiatan</th>
-                    <th>Organisasi</th>
                     <th class="col-center">Waktu Mulai</th>
                     <th class="col-center">Waktu Selesai</th>
                     <th class="col-center">Siswa</th>
@@ -85,7 +84,6 @@
                                 </div>
                             @endif
                         </td>
-                        <td>{{ $d->organisasi->nama_organisasi ?? '—' }}</td>
                         <td class="col-center text-muted-sm">
                             {{ \Carbon\Carbon::parse($d->waktu_mulai)->translatedFormat('d M Y, H:i') }}
                         </td>

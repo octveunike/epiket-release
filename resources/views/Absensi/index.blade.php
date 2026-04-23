@@ -8,9 +8,15 @@
         <h2>Data Absensi</h2>
     </div>
     @if(auth()->user()->hasRole(['Admin','Petugas Piket']))
-    <a href="{{ route('Absensi.create') }}" class="btn btn-primary">
-        <i class="ri-add-line"></i> Tambah Absensi
-    </a>
+    <div style="display:flex; gap:12px;">
+        <button type="button" class="btn btn-import" onclick="showGenerateModal()" style="margin: 0;">
+            <i class="ri-refresh-line"></i> Generate Absensi Hari Ini
+        </button>
+
+        <a href="{{ route('Absensi.create') }}" class="btn btn-primary">
+            <i class="ri-add-line"></i> Tambah Absensi
+        </a>
+    </div>
     @endif
 </div>
 
@@ -124,26 +130,33 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="deleteModal">
-    <div class="modal-box">
-        <div class="modal-header">
-            <span class="modal-title">Konfirmasi Hapus</span>
-            <button class="modal-close" onclick="closeDeleteModal()"><i class="ri-close-line"></i></button>
-        </div>
-        <div class="modal-body">
-            <div class="modal-icon danger"><i class="ri-error-warning-line"></i></div>
-            <p class="modal-confirm-text">
-                Hapus data absensi<br>
-                <strong id="deleteLabel" class="modal-confirm-label"></strong>?<br>
-                <small class="text-danger-sm">Semua detail absensi siswa di data ini akan ikut terhapus.</small>
-            </p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Batal</button>
-            <form id="delete-form" method="POST" style="display:inline;">
-                @csrf @method('DELETE')
-                <button type="submit" class="btn btn-danger"><i class="ri-delete-bin-line"></i> Hapus</button>
+<div class="confirm-overlay" id="generateModal">
+    <div class="confirm-box">
+        <div class="confirm-icon" style="background:#fef3c7; color:#d97706;">?</div>
+        <h3>Generate Absensi</h3>
+        <p>Sistem akan membuat absensi semua kelas hari ini.</p>
+        <div class="confirm-actions">
+            <form action="{{ route('Absensi.generate') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn btn-primary">Generate</button>
             </form>
+            <button onclick="closeGenerateModal()" class="btn btn-secondary">Batal</button>
+        </div>
+    </div>
+</div>
+
+<div class="confirm-overlay" id="deleteModal">
+    <div class="confirm-box">
+        <div class="confirm-icon">!</div>
+        <h3>Hapus data absensi <strong id="deleteLabel"></strong>?</h3>
+        <p>Semua detail absensi siswa di data ini akan ikut terhapus.</p>
+        <div class="confirm-actions">
+            <form id="delete-form" method="POST">
+                @csrf 
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger">Ya, Hapus</button>
+            </form>
+            <button onclick="closeDeleteModal()" class="btn btn-secondary">Batal</button>
         </div>
     </div>
 </div>
@@ -152,13 +165,23 @@
 
 @push('scripts')
 <script>
+    function showGenerateModal() {
+        document.getElementById('generateModal').classList.add('show');
+    }
+    function closeGenerateModal() {
+        document.getElementById('generateModal').classList.remove('show');
+    }
+    document.getElementById('generateModal').addEventListener('click', function(e) {
+        if (e.target === this) closeGenerateModal();
+    });
+
     function showDeleteModal(id, tanggal, kelas) {
         document.getElementById('deleteLabel').textContent = tanggal + ' — ' + kelas;
         document.getElementById('delete-form').action = "{{ route('Absensi.destroy', '') }}/" + id;
-        document.getElementById('deleteModal').classList.add('active');
+        document.getElementById('deleteModal').classList.add('show');
     }
     function closeDeleteModal() {
-        document.getElementById('deleteModal').classList.remove('active');
+        document.getElementById('deleteModal').classList.remove('show');
     }
     document.getElementById('deleteModal').addEventListener('click', function(e) {
         if (e.target === this) closeDeleteModal();

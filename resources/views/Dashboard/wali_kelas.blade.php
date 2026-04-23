@@ -8,14 +8,14 @@
     <div>
         <div class="breadcrumb">Dashboard</div>
         <h2>Dashboard Wali Kelas</h2>
-        <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+        <div class="dash-breadcrumb-date">
             {{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}
         </div>
     </div>
     @if($viewMode === 'wali' || !isset($kelas) || !$kelas)
-    <form method="GET" action="{{ route('admin.index') }}" style="display:flex; gap:8px; align-items:center;">
+    <form method="GET" action="{{ route('admin.index') }}" class="dash-filter-form">
         <input type="hidden" name="view" value="wali">
-        <select name="kelas_id" class="form-control" style="width:180px;">
+        <select name="kelas_id" class="form-control">
             <option value="">-- Pilih Kelas --</option>
             @foreach($daftarKelas as $k)
                 <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
@@ -31,7 +31,7 @@
 </div>
 
 @if(!isset($kelas) || !$kelas)
-    <div class="empty-state" style="padding:60px 24px;">
+    <div class="empty-state dash-empty-large">
         <i class="ri-building-4-line"></i>
         <p>
             @if($viewMode === 'wali') Pilih kelas di atas untuk melihat dashboard
@@ -59,7 +59,7 @@
 </div>
 
 {{-- ===== STAT HARI INI ===== --}}
-<div class="ab-stat-grid" style="grid-template-columns:repeat(5,1fr); margin-bottom:20px;">
+<div class="dash-stat-grid-5">
     <div class="ab-stat-item ab-stat-hadir">
         <div class="ab-stat-num">{{ $totalHadir }}</div>
         <div class="ab-stat-lbl">Hadir</div>
@@ -84,17 +84,17 @@
 
 {{-- ===== FOKUS UTAMA: ABSENSI MENUNGGU VALIDASI ===== --}}
 <div class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+    <div class="dash-section-header">
         <div>
-            <div class="card-title" style="margin-bottom:2px;">
-                <i class="ri-shield-check-line" style="color:var(--primary);"></i> Absensi Menunggu Validasi Anda
+            <div class="dash-section-title">
+                <i class="ri-shield-check-line"></i> Absensi Menunggu Validasi Anda
             </div>
-            <div style="font-size:12px; color:var(--text-muted);">
+            <div class="dash-section-subtitle">
                 Setujui absensi yang sudah diisi Ketua Kelas
             </div>
         </div>
         @if($absensiMenungguValidasi->isNotEmpty())
-            <span class="badge badge-warning" style="padding:6px 14px; font-size:12px;">
+            <span class="badge badge-warning dash-badge-big">
                 {{ $absensiMenungguValidasi->count() }} Menunggu
             </span>
         @endif
@@ -124,7 +124,7 @@
                         <td>
                             <strong>{{ \Carbon\Carbon::parse($ab->tanggal)->translatedFormat('l, d M Y') }}</strong>
                             @if(\Carbon\Carbon::parse($ab->tanggal)->isToday())
-                                <span class="badge badge-success" style="margin-left:4px; font-size:10px;">Hari Ini</span>
+                                <span class="badge badge-success dash-badge-today">Hari Ini</span>
                             @endif
                         </td>
                         <td>{{ $ab->user_input ?? '-' }}</td>
@@ -145,13 +145,13 @@
 </div>
 
 {{-- ===== RIWAYAT + KETERLAMBATAN ===== --}}
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+<div class="dash-grid-2">
 
     {{-- Riwayat 7 Hari --}}
-    <div class="card" style="margin-bottom:0;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-            <div class="card-title" style="margin-bottom:0;">
-                <i class="ri-history-line" style="color:var(--primary);"></i> Riwayat 7 Hari Terakhir
+    <div class="card">
+        <div class="dash-section-header">
+            <div class="dash-section-title">
+                <i class="ri-history-line"></i> Riwayat 7 Hari Terakhir
             </div>
             <a href="{{ route('Absensi.walikelas.index') }}" class="btn btn-sm btn-secondary">
                 Semua <i class="ri-arrow-right-line"></i>
@@ -164,21 +164,21 @@
             </div>
         @else
             @foreach($riwayatAbsensi as $ab)
-            <div class="ab-infobar" style="margin-bottom:8px; padding:10px 14px;">
-                <div class="ab-infobar-left" style="font-size:13px;">
+            <div class="ab-infobar dash-row-item">
+                <div class="ab-infobar-left">
                     <i class="ri-calendar-line"></i>
                     <strong>{{ \Carbon\Carbon::parse($ab->tanggal)->translatedFormat('l, d M') }}</strong>
                     <span class="ab-infobar-sep">·</span>
                     <span>{{ $ab->user_input ?? '-' }}</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:6px;">
+                <div class="dash-row-actions">
                     @php
                         $cls = match((int)$ab->status_verifikasi_id) {
                             5=>'badge-success', 3=>'badge-warning', default=>'badge-info'
                         };
                     @endphp
                     <span class="badge {{ $cls }}">{{ $ab->nama_verifikasi }}</span>
-                    <a href="{{ route('Absensi.show', $ab->id) }}" class="btn btn-sm btn-secondary" style="padding:4px 8px;">
+                    <a href="{{ route('Absensi.show', $ab->id) }}" class="btn btn-sm btn-secondary dash-btn-icon-only">
                         <i class="ri-eye-line"></i>
                     </a>
                 </div>
@@ -188,11 +188,11 @@
     </div>
 
     {{-- Keterlambatan Bulan Ini --}}
-    <div class="card" style="margin-bottom:0;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-            <div class="card-title" style="margin-bottom:0;">
-                <i class="ri-time-line" style="color:var(--primary);"></i> Keterlambatan Bulan Ini
-                <span class="badge badge-warning" style="margin-left:6px;">{{ $totalTerlambat }}</span>
+    <div class="card">
+        <div class="dash-section-header">
+            <div class="dash-section-title">
+                <i class="ri-time-line"></i> Keterlambatan Bulan Ini
+                <span class="badge badge-warning dash-badge-count">{{ $totalTerlambat }}</span>
             </div>
             <a href="{{ route('Keterlambatan.index') }}" class="btn btn-sm btn-secondary">
                 Semua <i class="ri-arrow-right-line"></i>
@@ -205,12 +205,12 @@
             </div>
         @else
             @foreach($keterlambatanBulanIni as $kt)
-            <div class="ab-infobar" style="margin-bottom:6px; padding:10px 14px;">
-                <div class="ab-infobar-left" style="font-size:13px;">
+            <div class="ab-infobar dash-kt-item">
+                <div class="ab-infobar-left">
                     <i class="ri-user-line"></i>
                     <div>
                         <strong>{{ $kt->nama_siswa }}</strong>
-                        <div style="font-size:11px; color:var(--text-muted);">{{ $kt->alasan ?? '-' }}</div>
+                        <div class="dash-kt-reason">{{ $kt->alasan ?? '-' }}</div>
                     </div>
                 </div>
                 <span class="badge badge-warning">
@@ -226,8 +226,8 @@
 @if(isset($dispensasiAktif) && $dispensasiAktif->isNotEmpty())
 <div class="card">
     <div class="card-title">
-        <i class="ri-file-paper-2-line" style="color:var(--primary);"></i> Dispensasi Aktif Kelas Ini
-        <span class="badge badge-info" style="margin-left:6px;">{{ $dispensasiAktif->count() }}</span>
+        <i class="ri-file-paper-2-line"></i> Dispensasi Aktif Kelas Ini
+        <span class="badge badge-info dash-badge-count">{{ $dispensasiAktif->count() }}</span>
     </div>
     <div class="table-responsive">
         <table>

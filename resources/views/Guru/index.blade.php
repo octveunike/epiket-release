@@ -39,6 +39,7 @@
                     <th>NIP</th>
                     <th>Nama Guru</th>
                     <th>Mata Pelajaran</th>
+                    <th>Akun Login</th>
                     <th style="text-align:center;">Aksi</th>
                 </tr>
             </thead>
@@ -49,6 +50,13 @@
                         <td>{{ $val->nip }}</td>
                         <td>{{ $val->nama_guru }}</td>
                         <td>{{ $val->mata_pelajaran ?? '-' }}</td>
+                        <td>
+                            @if ($val->user)
+                                <span class="badge badge-info">{{ $val->user->username }}</span>
+                            @else
+                                <span style="color:var(--text-muted); font-size:12px;">—</span>
+                            @endif
+                        </td>
                         <td class="col-center" style="white-space:nowrap;">
                             <a href="{{ route('Guru.edit', $val->id) }}" class="btn btn-sm btn-primary">
                                 <i class="ri-edit-2-line"></i> Edit
@@ -66,27 +74,19 @@
     </div>
 </div>
 
-{{-- Modal Hapus --}}
-<div class="modal-overlay" id="deleteModal">
-    <div class="modal-box">
-        <div class="modal-header">
-            <span class="modal-title">Konfirmasi Hapus</span>
-            <button class="modal-close" onclick="closeDeleteModal()"><i class="ri-close-line"></i></button>
-        </div>
-        <div class="modal-body">
-            <div class="modal-icon danger"><i class="ri-error-warning-line"></i></div>
-            <p class="modal-confirm-text">
-                Hapus data guru<br>
-                <strong id="deleteLabel" class="modal-confirm-label"></strong>?<br>
-                <small class="text-danger-sm">Data yang dihapus tidak dapat dikembalikan.</small>
-            </p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Batal</button>
-            <form id="delete-form" method="POST" style="display:inline;">
-                @csrf @method('DELETE')
-                <button type="submit" class="btn btn-danger"><i class="ri-delete-bin-line"></i> Hapus</button>
+{{-- Delete Modal --}}
+<div class="confirm-overlay" id="deleteModal">
+    <div class="confirm-box">
+        <div class="confirm-icon">!</div>
+        <h3>Hapus Guru?</h3>
+        <p>Data yang dihapus tidak dapat dikembalikan.</p>
+        <div class="confirm-actions">
+            <form id="delete-form" method="POST">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger">Ya, Hapus</button>
             </form>
+            <button onclick="closeDeleteModal()" class="btn btn-secondary">Batal</button>
         </div>
     </div>
 </div>
@@ -134,12 +134,11 @@
 @push('scripts')
 <script>
 function showDeleteModal(id, nama) {
-    document.getElementById('deleteLabel').textContent = nama;
     document.getElementById('delete-form').action = "{{ route('Guru.destroy', '') }}/" + id;
-    document.getElementById('deleteModal').classList.add('active');
+    document.getElementById('deleteModal').classList.add('show');
 }
 function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.remove('active');
+    document.getElementById('deleteModal').classList.remove('show');
 }
 document.getElementById('deleteModal').addEventListener('click', function(e) {
     if (e.target === this) closeDeleteModal();

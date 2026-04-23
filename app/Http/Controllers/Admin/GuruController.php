@@ -18,7 +18,7 @@ class GuruController extends Controller
      */
     public function index()
     {
-        $data = Guru::where('status', '1')->get();
+        $data = Guru::with('user')->where('status', '1')->get();
         return view('Guru.index', compact('data'));
     }
 
@@ -27,7 +27,7 @@ class GuruController extends Controller
      */
     public function create()
     {
-        $users = User::all();
+        $users = User::where('status', 1)->orderBy('nama')->get();
         return view('Guru.create', compact('users'));
     }
 
@@ -71,7 +71,7 @@ class GuruController extends Controller
     public function edit(string $id)
     {
         $Guru  = Guru::findOrFail($id);
-        $users = User::all();
+        $users = User::where('status', 1)->orderBy('nama')->get();
         return view('Guru.edit', compact('Guru', 'users'));
     }
 
@@ -104,6 +104,12 @@ class GuruController extends Controller
         } catch (Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', $e->getMessage());
+        }
+
+        // Redirect balik ke halaman Kelas edit kalau datang dari sana
+        if ($request->return_to === 'kelas_edit' && $request->kelas_id) {
+            return redirect()->route('Kelas.edit', $request->kelas_id)
+                ->with('success', 'Data Guru berhasil diupdate');
         }
 
         return redirect()->route('Guru.index')->with('success', 'Data Guru berhasil diupdate');

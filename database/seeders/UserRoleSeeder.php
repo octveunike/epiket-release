@@ -38,7 +38,7 @@ class UserRoleSeeder extends Seeder
             'nama' => 'Dra. Dian T Amperawati',
             'username' => 'wali_x1',
             'email' => 'dian@epiket.test',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('wali_x1'),
             'status' => 1,
         ];
 
@@ -48,7 +48,7 @@ class UserRoleSeeder extends Seeder
             'nama' => 'ABDUL GHANI AL-KHAIRI',
             'username' => 'ketua_x1',
             'email' => 'ketua@epiket.test',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('ketua_x1'),
             'status' => 1,
         ];
 
