@@ -151,7 +151,7 @@
                     <th class="col-no">No</th>
                     <th>Nama Siswa</th>
                     <th class="col-center">Status</th>
-                    <th class="col-center">Waktu</th>
+                    <th class="col-center">Waktu Izin</th>
                     <th>Keterangan</th>
                     <th class="col-center">Sumber</th>
                     <th class="col-center">Aksi</th>
@@ -217,8 +217,8 @@ $preEntries = $sudahTercatat->map(function ($d) use ($statusMap, $waktuSehariDat
     return [
         'siswaId'       => $d->siswa_id,
         'nama'          => $d->siswa->nama_siswa ?? '—',
-        'status'        => $statusMap[$d->status_absensi_id] ?? 'H',
-        'statusDisplay' => $statusMap[$d->status_absensi_id] ?? 'H',
+        'status'        => $d->status_absensi_id ? ($statusMap[$d->status_absensi_id] ?? null) : null,
+        'statusDisplay' => $d->status_absensi_id ? ($statusMap[$d->status_absensi_id] ?? null) : null,
         'isFullDay'     => (bool) $d->is_full_day,
         'tipe'          => null,
         'jamsIds'       => [],
@@ -353,7 +353,7 @@ function addEntry() {
 
     const keteranganFinal = document.getElementById('ketEl').value.trim();
     const isPerJam        = (!isFullDay && curStatus !== 'A');
-    const statusSimpan    = isPerJam ? null : curStatus;
+    const statusSimpan    = curStatus;
 
     entries.push({
         siswaId,
@@ -433,14 +433,19 @@ function renderEntryList() {
             statusCell = `
                 <span style="${bdStyle.H}padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;">Hadir</span>
                 <span style="${bdStyle.T}padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;margin-left:4px;">Terlambat</span>`;
-        } else if (e.status === null && !e.isFullDay) {
-            const subLbl   = stLbl[e.statusDisplay] ?? '';
-            const subStyle = bdStyle[e.statusDisplay] ?? '';
-            statusCell = `
-                <span style="${bdStyle.H}padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;">Hadir</span>
-                <span style="${subStyle}padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;margin-left:4px;">${subLbl}</span>`;
+        } else if (!e.isFullDay) {
+            const d = e.statusDisplay;
+            if (d && d !== 'H') {
+                const subLbl   = stLbl[d] ?? '';
+                const subStyle = bdStyle[d] ?? '';
+                statusCell = `
+                    <span style="${bdStyle.H}padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;">Hadir</span>
+                    <span style="${subStyle}padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;margin-left:4px;">${subLbl}</span>`;
+            } else {
+                statusCell = `<span style="${bdStyle.H}padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;">Hadir</span>`;
+            }
         } else {
-            const d = e.statusDisplay ?? e.status;
+            const d = e.statusDisplay ?? 'H';
             statusCell = `<span style="${bdStyle[d]??''}padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;">${stLbl[d]??d}</span>`;
         }
 

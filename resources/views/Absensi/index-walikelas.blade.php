@@ -51,6 +51,7 @@
 
 <form id="bulk-form" method="POST" action="{{ route('Absensi.walikelas.bulkValidasi') }}">
     @csrf
+    <input type="hidden" name="bulk_action" id="bulk-action-input" value="validasi">
     <div class="card">
         <div class="table-responsive">
             <table>
@@ -83,17 +84,13 @@
                             <td>{{ $absensi->periodeAkademik->nama_periode ?? '—' }}</td>
                             <td class="col-center">
                                 <span style="font-size:13px;color:var(--text-main);">
-                                    {{ $absensi->statusVerifikasi->nama_status ?? '—' }}
+                                    {{ $absensi->statusValidasi->nama_status ?? '—' }}
                                 </span>
                             </td>
                             <td class="col-center">
                                 <a href="{{ route('Absensi.show', $absensi->id) }}"
                                     class="btn btn-sm btn-info">
                                     <i class="ri-eye-line"></i> Detail Absensi
-                                </a>
-                                <a href="{{ route('Absensi.isiAbsensi', $absensi->id) }}"
-                                    class="btn btn-sm btn-primary">
-                                    <i class="ri-edit-line"></i> Edit
                                 </a>
                             </td>
                         </tr>
@@ -137,7 +134,7 @@
                         <td>{{ $absensi->periodeAkademik->nama_periode ?? '—' }}</td>
                         <td class="col-center">
                             <span style="font-size:13px;color:var(--text-main);">
-                                {{ $absensi->statusVerifikasi->nama_status ?? '—' }}
+                                {{ $absensi->statusValidasi->nama_status ?? '—' }}
                             </span>
                         </td>
                         <td class="col-center">
@@ -161,46 +158,28 @@
 </div>
 
 {{-- Modal Bulk Validasi --}}
-<div class="modal-overlay" id="bulkValidasiModal">
-    <div class="modal-box">
-        <div class="modal-header">
-            <span class="modal-title">Validasi Sekaligus</span>
-            <button class="modal-close" onclick="closeBulkValidasiModal()"><i class="ri-close-line"></i></button>
+<div class="confirm-overlay" id="bulkValidasiModal">
+    <div class="confirm-box">
+        <div class="confirm-icon" style="background:#e0f2fe;color:#0ea5e9;">
+            <i class="ri-checkbox-circle-line" style="font-size:32px;line-height:64px;"></i>
         </div>
-        <div class="modal-body">
-            <div class="modal-icon" style="background:var(--primary-light);color:var(--primary);">
-                <i class="ri-checkbox-circle-line"></i>
-            </div>
-            <p class="modal-confirm-text">
-                Validasi <strong id="bulkCountModal">0</strong> absensi yang dipilih?<br>
-                <small style="color:var(--text-muted);">Semua akan berubah status menjadi <strong>Disetujui</strong>.</small>
-            </p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeBulkValidasiModal()">Batal</button>
-            <button type="button" class="btn btn-primary" onclick="submitBulkValidasi()">
-                <i class="ri-checkbox-circle-line"></i> Validasi Semua
-            </button>
+        <h3>Tindakan untuk Absensi Terpilih?</h3>
+        <p>Validasi jika sudah sesuai atau ajukan revisi kepada ketua kelas.<br></p>
+        <div class="confirm-actions">
+            <button type="button" class="btn btn-primary" onclick="submitBulkAction('validasi')">Ya, Validasi</button>
+            <button type="button" class="btn btn-warning" onclick="submitBulkAction('revisi')">Perlu Revisi</button>
         </div>
     </div>
 </div>
 
 {{-- Modal Warning: belum pilih absensi --}}
-<div class="modal-overlay" id="warningPilihModal">
-    <div class="modal-box">
-        <div class="modal-header">
-            <span class="modal-title">Perhatian</span>
-            <button class="modal-close" onclick="document.getElementById('warningPilihModal').classList.remove('active')"><i class="ri-close-line"></i></button>
-        </div>
-        <div class="modal-body">
-            <div class="modal-icon danger"><i class="ri-error-warning-line"></i></div>
-            <p class="modal-confirm-text">Pilih absensi yang ingin divalidasi!</p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-primary"
-                onclick="document.getElementById('warningPilihModal').classList.remove('active')">
-                OK
-            </button>
+<div class="confirm-overlay" id="warningPilihModal">
+    <div class="confirm-box">
+        <div class="confirm-icon" style="background:#fee2e2;color:#ef4444;">!</div>
+        <h3>Perhatian</h3>
+        <p>Pilih absensi yang ingin divalidasi terlebih dahulu!</p>
+        <div class="confirm-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeWarningModal()">Mengerti</button>
         </div>
     </div>
 </div>
@@ -244,19 +223,27 @@
     function showBulkValidasiModal() {
         const checked = document.querySelectorAll('.row-check:checked').length;
         if (checked === 0) {
-            document.getElementById('warningPilihModal').classList.add('active');
+            document.getElementById('warningPilihModal').classList.add('show');
             return;
         }
-        document.getElementById('bulkValidasiModal').classList.add('active');
+        document.getElementById('bulkValidasiModal').classList.add('show');
     }
     function closeBulkValidasiModal() {
-        document.getElementById('bulkValidasiModal').classList.remove('active');
+        document.getElementById('bulkValidasiModal').classList.remove('show');
     }
     document.getElementById('bulkValidasiModal').addEventListener('click', function(e) {
         if (e.target === this) closeBulkValidasiModal();
     });
 
-    function submitBulkValidasi() {
+    function closeWarningModal() {
+        document.getElementById('warningPilihModal').classList.remove('show');
+    }
+    document.getElementById('warningPilihModal').addEventListener('click', function(e) {
+        if (e.target === this) closeWarningModal();
+    });
+
+    function submitBulkAction(action) {
+        document.getElementById('bulk-action-input').value = action;
         document.getElementById('bulk-form').submit();
     }
 </script>

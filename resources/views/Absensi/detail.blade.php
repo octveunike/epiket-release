@@ -54,7 +54,7 @@
                         <div style="font-size:12px;color:var(--text-muted);">
                             {{ $absensi->periodeAkademik->nama_periode ?? '—' }}
                             &nbsp;·&nbsp;
-                            @if ($absensi->status_verifikasi_id == 2)
+                            @if ($absensi->status_validasi_id == 2)
                                 <span style="color:#10b981;font-weight:600;">✓ Terverifikasi</span>
                             @else
                                 <span style="color:#f59e0b;font-weight:600;">Belum Diverifikasi</span>
@@ -107,11 +107,26 @@
                                     @if ($s == 1)
                                         <span class="badge badge-success">Hadir</span>
                                     @elseif ($s == 2)
-                                        <span class="badge badge-info">Izin</span>
+                                        @if(!$d->is_full_day)
+                                            <span class="badge badge-success">Hadir</span>
+                                            <span class="badge badge-info" style="margin-left:4px;">Izin</span>
+                                        @else
+                                            <span class="badge badge-info">Izin</span>
+                                        @endif
                                     @elseif ($s == 3)
-                                        <span class="badge badge-warning">Sakit</span>
+                                        @if(!$d->is_full_day)
+                                            <span class="badge badge-success">Hadir</span>
+                                            <span class="badge badge-warning" style="margin-left:4px;">Sakit</span>
+                                        @else
+                                            <span class="badge badge-warning">Sakit</span>
+                                        @endif
                                     @elseif ($s == 4)
-                                        <span class="badge badge-danger">Alpha</span>
+                                        @if(!$d->is_full_day)
+                                            <span class="badge badge-success">Hadir</span>
+                                            <span class="badge badge-danger" style="margin-left:4px;">Alpha</span>
+                                        @else
+                                            <span class="badge badge-danger">Alpha</span>
+                                        @endif
                                     @else
                                         <span class="badge">—</span>
                                     @endif

@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('status_verifikasi', function (Blueprint $table) {
+        Schema::create('status_validasi', function (Blueprint $table) {
             $table->id();
             $table->string('nama_status')->nullable();
             $table->string('keterangan')->nullable();
@@ -23,6 +23,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('status_verifikasi');
+        Schema::dropIfExists('status_validasi');
     }
 };

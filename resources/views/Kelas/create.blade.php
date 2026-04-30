@@ -24,12 +24,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Periode Akademik</label>
+                    <label class="form-label">Periode Akademik<span class="required">*</span></label>
                     @php
                         $periodeAktif = $periode->firstWhere('status', 1);
                         $selectedPeriode = old('periode_akademik_id', $periodeAktif->id ?? null);
                     @endphp
-                    <select name="periode_akademik_id" class="form-control">
+                    <select name="periode_akademik_id" class="form-control" required>
                         <option value="">-- Pilih Periode --</option>
                         @foreach ($periode as $p)
                             <option value="{{ $p->id }}"
@@ -42,10 +42,10 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Wali Kelas</label>
-                    <select name="wali_kelas_id" id="wali-kelas-select" class="form-control">
+                    <label class="form-label">Wali Kelas <span class="required">*</span></label>
+                    <select name="wali_kelas_id" id="wali-kelas-select" class="form-control" required>
                         <option value="" data-user-id="" data-guru-id="">-- Pilih Wali Kelas --</option>
-                        @foreach ($guru as $g)
+                        @foreach ($guru->sortBy('nama_guru') as $g)
                             <option value="{{ $g->id }}"
                                 data-user-id="{{ $g->user_id ?? '' }}"
                                 data-guru-id="{{ $g->id }}"
@@ -63,10 +63,10 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Ketua Kelas</label>
-                    <select name="ketua_kelas_id" id="ketua-kelas-select" class="form-control">
+                    <label class="form-label">Ketua Kelas <span class="required">*</span></label>
+                    <select name="ketua_kelas_id" id="ketua-kelas-select" class="form-control" required>
                         <option value="" data-user-id="" data-siswa-id="">-- Pilih Ketua Kelas --</option>
-                        @foreach ($siswa as $s)
+                        @foreach ($siswa->sortBy('nama_siswa') as $s)
                             <option value="{{ $s->id }}"
                                 data-user-id="{{ $s->user_id ?? '' }}"
                                 data-siswa-id="{{ $s->id }}"

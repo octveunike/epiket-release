@@ -14,7 +14,7 @@
         </div>
     </div>
     <div style="display:flex; gap:8px;">
-        <a href="{{ route('DaftarTamu.create') }}" class="btn btn-secondary">
+        <a href="{{ route('DaftarTamu.create') }}" class="btn btn-primary">
             <i class="ri-user-add-line"></i> Tambah Tamu
         </a>
         <a href="{{ route('Keterlambatan.create') }}" class="btn btn-primary">
@@ -57,14 +57,11 @@
     </div>
 </div>
 
-{{-- ===== STATUS ABSENSI + VERIF ===== --}}
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
-
-    {{-- Status & Kelas Belum Absen --}}
-    <div class="card" style="margin-bottom:0;">
-        <div class="card-title">
-            <i class="ri-calendar-check-line" style="color:var(--primary);"></i> Status Absensi Hari Ini
-        </div>
+{{-- ===== STATUS ABSENSI ===== --}}
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-title">
+        <i class="ri-calendar-check-line" style="color:var(--primary);"></i> Status Absensi Hari Ini
+    </div>
 
         {{-- Progress --}}
         @php $pct = $totalKelas > 0 ? round(($kelasUdahAbsen/$totalKelas)*100) : 0; @endphp
@@ -114,42 +111,6 @@
             <i class="ri-checkbox-circle-line"></i> Semua kelas sudah input absensi
         </div>
         @endif
-    </div>
-
-    {{-- Absensi Menunggu Verifikasi --}}
-    <div class="card" style="margin-bottom:0;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-            <div class="card-title" style="margin-bottom:0;">
-                <i class="ri-file-check-line" style="color:var(--primary);"></i> Perlu Diverifikasi
-                @if($absensiMenungguVerif->isNotEmpty())
-                    <span class="badge badge-warning" style="margin-left:6px;">{{ $absensiMenungguVerif->count() }}</span>
-                @endif
-            </div>
-            <a href="{{ route('Absensi.walikelas.index') }}" class="btn btn-sm btn-secondary">
-                Semua <i class="ri-arrow-right-line"></i>
-            </a>
-        </div>
-        @if($absensiMenungguVerif->isEmpty())
-            <div class="empty-state">
-                <i class="ri-checkbox-circle-line"></i>
-                <p>Tidak ada absensi menunggu verifikasi</p>
-            </div>
-        @else
-            @foreach($absensiMenungguVerif as $ab)
-            <div class="ab-infobar" style="margin-bottom:8px; padding:10px 14px;">
-                <div class="ab-infobar-left" style="font-size:13px;">
-                    <i class="ri-building-4-line"></i>
-                    <strong>{{ $ab->nama_kelas }}</strong>
-                    <span class="ab-infobar-sep">·</span>
-                    <span>{{ \Carbon\Carbon::parse($ab->tanggal)->translatedFormat('d M Y') }}</span>
-                </div>
-                <a href="{{ route('Absensi.show', $ab->id) }}" class="btn btn-sm btn-primary">
-                    <i class="ri-eye-line"></i> Lihat
-                </a>
-            </div>
-            @endforeach
-        @endif
-    </div>
 </div>
 
 {{-- ===== KETERLAMBATAN ===== --}}
@@ -236,7 +197,7 @@
                     <tr>
                         <td class="col-no">{{ $i + 1 }}</td>
                         <td>{{ $d->kegiatan }}</td>
-                        <td>{{ $d->nama_organisasi }}</td>
+                        <td>{{ $d->nama_organisasi ?? '—' }}</td>
                         <td class="col-center">{{ \Carbon\Carbon::parse($d->waktu_mulai)->format('d M Y') }}</td>
                         <td class="col-center">{{ \Carbon\Carbon::parse($d->waktu_selesai)->format('d M Y') }}</td>
                         <td class="col-center">
@@ -256,22 +217,17 @@
 <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
         <div class="card-title" style="margin-bottom:0;">
-            <i class="ri-user-received-line" style="color:var(--primary);"></i> Daftar Tamu Hari Ini
-            <span class="badge badge-primary" style="margin-left:6px;">{{ $tamuHariIni->count() }}</span>
+            <i class="ri-user-received-line" style="color:var(--primary);"></i> Daftar Tamu
+            <span class="badge badge-primary" style="margin-left:6px;">{{ $daftarTamu->count() }}</span>
         </div>
-        <div style="display:flex; gap:6px;">
-            <a href="{{ route('DaftarTamu.create') }}" class="btn btn-sm btn-primary">
-                <i class="ri-add-line"></i> Tambah
-            </a>
-            <a href="{{ route('DaftarTamu.index') }}" class="btn btn-sm btn-secondary">
-                Semua <i class="ri-arrow-right-line"></i>
-            </a>
-        </div>
+        <a href="{{ route('DaftarTamu.index') }}" class="btn btn-sm btn-secondary">
+            Lihat Selengkapnya <i class="ri-arrow-right-line"></i>
+        </a>
     </div>
-    @if($tamuHariIni->isEmpty())
+    @if($daftarTamu->isEmpty())
         <div class="empty-state">
             <i class="ri-user-received-line"></i>
-            <p>Belum ada tamu hari ini</p>
+            <p>Belum ada daftar tamu</p>
         </div>
     @else
         <div class="table-responsive">
@@ -279,6 +235,7 @@
                 <thead>
                     <tr>
                         <th>No</th>
+                        <th>Tanggal</th>
                         <th>Nama</th>
                         <th>Lembaga / Organisasi</th>
                         <th>Orang Dituju</th>
@@ -286,9 +243,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($tamuHariIni as $i => $t)
+                    @foreach($daftarTamu as $i => $t)
                     <tr>
                         <td class="col-no">{{ $i + 1 }}</td>
+                        <td class="col-center" style="white-space:nowrap;">{{ \Carbon\Carbon::parse($t->tanggal_kunjungan)->translatedFormat('d M Y') }}</td>
                         <td><strong>{{ $t->nama }}</strong></td>
                         <td>{{ $t->lembaga_organisasi ?? '-' }}</td>
                         <td>{{ $t->orang_yang_dituju ?? '-' }}</td>

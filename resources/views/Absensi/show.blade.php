@@ -61,9 +61,9 @@
         <div>
             <div class="ab-info-label">Status</div>
             <div>
-                @if ($absensi->statusVerifikasi)
-                    <span class="badge {{ in_array($absensi->status_verifikasi_id, [5]) ? 'badge-success' : 'badge-warning' }}">
-                        {{ $absensi->statusVerifikasi->nama_status }}
+                @if ($absensi->statusValidasi)
+                    <span class="badge {{ in_array($absensi->status_validasi_id, [5]) ? 'badge-success' : 'badge-warning' }}">
+                        {{ $absensi->statusValidasi->nama_status }}
                     </span>
                 @else
                     <span style="color:#94a3b8;">—</span>
@@ -125,13 +125,33 @@
                         <td><strong>{{ $d->siswa->nama_siswa ?? '—' }}</strong></td>
                         <td class="col-center">
                             @if ($sid == 1)
-                                <span class="badge badge-info">Izin</span>
+                                @if(!$d->is_full_day)
+                                    <span class="badge badge-success">Hadir</span>
+                                    <span class="badge badge-info" style="margin-left:4px;">Izin</span>
+                                @else
+                                    <span class="badge badge-info">Izin</span>
+                                @endif
                             @elseif ($sid == 2)
-                                <span class="badge badge-warning">Sakit</span>
+                                @if(!$d->is_full_day)
+                                    <span class="badge badge-success">Hadir</span>
+                                    <span class="badge badge-warning" style="margin-left:4px;">Sakit</span>
+                                @else
+                                    <span class="badge badge-warning">Sakit</span>
+                                @endif
                             @elseif ($sid == 3)
-                                <span class="badge badge-danger">Alpha</span>
+                                @if(!$d->is_full_day)
+                                    <span class="badge badge-success">Hadir</span>
+                                    <span class="badge badge-danger" style="margin-left:4px;">Alpha</span>
+                                @else
+                                    <span class="badge badge-danger">Alpha</span>
+                                @endif
                             @elseif ($sid == 4)
-                                <span class="badge badge-primary">Dispen</span>
+                                @if(!$d->is_full_day)
+                                    <span class="badge badge-success">Hadir</span>
+                                    <span class="badge badge-primary" style="margin-left:4px;">Dispen</span>
+                                @else
+                                    <span class="badge badge-primary">Dispen</span>
+                                @endif
                             @elseif ($sid == 5)
                                 <span class="badge badge-success">Hadir</span>
                                 <span class="badge badge-warning" style="margin-left:4px;">Terlambat</span>

@@ -28,7 +28,7 @@
                 <div class="form-group">
                     <label class="form-label">Tanggal Kunjungan <span class="required">*</span></label>
                     <input type="date" name="tanggal_kunjungan" class="form-control" required
-                        value="{{ old('tanggal_kunjungan', $DaftarTamu->tanggal_kunjungan) }}">
+                        value="{{ old('tanggal_kunjungan', $DaftarTamu->tanggal_kunjungan ?? \Carbon\Carbon::today()->format('Y-m-d')) }}">
                     @error('tanggal_kunjungan')<small style="color:#ef4444;">{{ $message }}</small>@enderror
                 </div>
 

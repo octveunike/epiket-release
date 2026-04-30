@@ -5,7 +5,7 @@
 <div class="page-header">
     <div>
         <div class="breadcrumb">Admin / <span class="breadcrumb-link">Laporan</span></div>
-        <h2>Laporan Kehadiran Siswa</h2>
+        <h2>Laporan Ketidakhadiran Siswa</h2>
     </div>
     @if(!empty($rows) && count($rows) > 0)
         <form method="GET" action="{{ route('Laporan.export') }}" style="display:inline;">
@@ -61,7 +61,10 @@
             <label class="form-label">Kategori</label>
             <select name="kategori" class="form-control">
                 <option value="">Semua</option>
-                <option value="absensi"       {{ request('kategori') === 'absensi'       ? 'selected' : '' }}>Absensi</option>
+                <option value="absensi"       {{ request('kategori') === 'absensi'       ? 'selected' : '' }}>Absensi (Semua)</option>
+                <option value="alpha"         {{ request('kategori') === 'alpha'         ? 'selected' : '' }}>Alpha</option>
+                <option value="sakit"         {{ request('kategori') === 'sakit'         ? 'selected' : '' }}>Sakit</option>
+                <option value="izin"          {{ request('kategori') === 'izin'          ? 'selected' : '' }}>Izin</option>
                 <option value="keterlambatan" {{ request('kategori') === 'keterlambatan' ? 'selected' : '' }}>Keterlambatan</option>
                 <option value="dispensasi"    {{ request('kategori') === 'dispensasi'    ? 'selected' : '' }}>Dispensasi</option>
             </select>
@@ -93,7 +96,7 @@
                     <th>Tanggal</th>
                     <th>Nama Siswa</th>
                     <th>Kelas</th>
-                    <th>Kategori</th>
+                    <th class="col-center">Kategori</th>
                     <th>Deskripsi</th>
                     <th>Keterangan</th>
                     <th>Penginput</th>
@@ -107,7 +110,7 @@
                         <td class="text-muted-sm">{{ $row['tanggal'] }}</td>
                         <td class="text-muted-sm">{{ $row['nama_siswa'] }}</td>
                         <td class="text-muted-sm">{{ $row['kelas'] }}</td>
-                        <td>
+                        <td class="col-center">
                             @php
                                 $label = $row['kategori'];
                                 $style = 'background:#fee2e2;color:#991b1b;'; // default (Absensi Alpha-ish)

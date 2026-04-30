@@ -4,10 +4,11 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 
 // ── Public routes (tanpa auth) ─────────────────────────────────────────────
+Route::get('/', function () { return redirect()->route('login'); });
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
-Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-Route::get('/password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+// Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+// Route::get('/password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
 
 // ── Protected routes (semua butuh login) ───────────────────────────────────
 Route::middleware(['auth'])->group(function () {
@@ -71,8 +72,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/add',                 [App\Http\Controllers\Apps\DispensasiController::class, 'create'])->name('create');
         Route::post('/add',                [App\Http\Controllers\Apps\DispensasiController::class, 'store'])->name('store');
         Route::post('/{id}/detail',        [App\Http\Controllers\Apps\DispensasiController::class, 'storeDetail'])->name('storeDetail');
+        Route::patch('/{id}/ajukan',       [App\Http\Controllers\Apps\DispensasiController::class, 'ajukan'])->name('ajukan');
+        Route::patch('/{id}/revisi',       [App\Http\Controllers\Apps\DispensasiController::class, 'revisi'])->name('revisi');
         Route::patch('/{id}/verifikasi',   [App\Http\Controllers\Apps\DispensasiController::class, 'verifikasi'])->name('verifikasi');
         Route::delete('/detail/{id}',      [App\Http\Controllers\Apps\DispensasiController::class, 'destroyDetail'])->name('destroyDetail');
+        Route::get('/{id}/edit',           [App\Http\Controllers\Apps\DispensasiController::class, 'edit'])->name('edit');
+        Route::put('/{id}',                [App\Http\Controllers\Apps\DispensasiController::class, 'update'])->name('update');
         Route::get('/{id}',                [App\Http\Controllers\Apps\DispensasiController::class, 'show'])->name('show');
         Route::delete('/{id}',             [App\Http\Controllers\Apps\DispensasiController::class, 'destroy'])->name('destroy');
     });

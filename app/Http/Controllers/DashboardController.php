@@ -48,6 +48,7 @@ class DashboardController extends Controller
 
         $kelasHariIni = DB::table('absensi')
             ->whereDate('tanggal', $today)->where('status', 1)
+            ->where('status_validasi_id', '>=', 3)
             ->distinct('kelas_id')->count('kelas_id');
 
         $kelasBelumIsi   = $totalKelas - $kelasHariIni;
@@ -55,7 +56,8 @@ class DashboardController extends Controller
         $kelasBelumAbsen = DB::table('kelas as k')
             ->leftJoin('absensi as a', function ($j) use ($today) {
                 $j->on('a.kelas_id', '=', 'k.id')
-                  ->whereDate('a.tanggal', $today)->where('a.status', 1);
+                  ->whereDate('a.tanggal', $today)->where('a.status', 1)
+                  ->where('a.status_validasi_id', '>=', 3);
             })
             ->where('k.status', 1)->whereNull('a.id')
             ->select('k.id', 'k.nama_kelas')->get();
@@ -77,14 +79,20 @@ class DashboardController extends Controller
             ->whereDate('waktu_masuk', $today)->where('status', 1)->count();
 
         $dispensasiPending   = DB::table('dispensasi')
-            ->where('status_verifikasi_id', 1)->where('status', 1)->count();
+            ->where('status_validasi_id', 1)->where('status', 1)->count();
 
         $absensiMenungguWali = DB::table('absensi')
-            ->where('status_verifikasi_id', 3)->where('status', 1)->count();
+            ->where('status_validasi_id', 3)->where('status', 1)->count();
 
-        $tamuHariIni = DB::table('daftar_tamu')
+        $totalTamuHariIni = DB::table('daftar_tamu')
             ->whereDate('tanggal_kunjungan', $today)->where('status', 1)
-            ->orderByDesc('id')->get();
+            ->count();
+
+        $daftarTamu = DB::table('daftar_tamu')
+            ->where('status', 1)
+            ->orderByDesc('tanggal_kunjungan')
+            ->orderByDesc('id')
+            ->limit(5)->get();
 
         $keterlambatanTerbaru = DB::table('keterlambatan as kt')
             ->join('siswa as s', 's.id', '=', 'kt.siswa_id')
@@ -93,15 +101,11 @@ class DashboardController extends Controller
             ->select('kt.*', 's.nama_siswa', 'kl.nama_kelas')
             ->orderByDesc('kt.waktu_masuk')->limit(5)->get();
 
-        $absensiMenungguVerif = DB::table('absensi as a')
-            ->join('kelas as k', 'k.id', '=', 'a.kelas_id')
-            ->where('a.status_verifikasi_id', 3)->where('a.status', 1)
-            ->select('a.*', 'k.nama_kelas')
-            ->orderByDesc('a.tanggal')->limit(5)->get();
+
 
         $dispensasiTerbaru = DB::table('dispensasi as d')
-            ->join('organisasi as o', 'o.id', '=', 'd.organisasi_id')
-            ->join('status_verifikasi as sv', 'sv.id', '=', 'd.status_verifikasi_id')
+            ->leftJoin('organisasi as o', 'o.id', '=', 'd.organisasi_id')
+            ->join('status_validasi as sv', 'sv.id', '=', 'd.status_validasi_id')
             ->where('d.status', 1)
             ->select('d.*', 'o.nama_organisasi', 'sv.nama_status as nama_verifikasi')
             ->orderByDesc('d.id')->limit(5)->get();
@@ -114,8 +118,8 @@ class DashboardController extends Controller
             'kelasHariIni', 'kelasBelumIsi', 'kelasBelumAbsen',
             'totalIzin', 'totalSakit', 'totalAlpha', 'totalDispen',
             'totalTerlambat', 'dispensasiPending', 'absensiMenungguWali',
-            'tamuHariIni', 'keterlambatanTerbaru',
-            'absensiMenungguVerif', 'dispensasiTerbaru',
+            'totalTamuHariIni', 'daftarTamu', 'keterlambatanTerbaru',
+            'dispensasiTerbaru',
             'daftarKelas', 'view'
         ));
     }
@@ -134,12 +138,14 @@ class DashboardController extends Controller
         $totalKelas     = DB::table('kelas')->where('status', 1)->count();
         $kelasUdahAbsen = DB::table('absensi')
             ->whereDate('tanggal', $today)->where('status', 1)
+            ->where('status_validasi_id', '>=', 3)
             ->distinct('kelas_id')->count('kelas_id');
 
         $kelasBelumAbsen = DB::table('kelas as k')
             ->leftJoin('absensi as a', function ($j) use ($today) {
                 $j->on('a.kelas_id', '=', 'k.id')
-                  ->whereDate('a.tanggal', $today)->where('a.status', 1);
+                  ->whereDate('a.tanggal', $today)->where('a.status', 1)
+                  ->where('a.status_validasi_id', '>=', 3);
             })
             ->where('k.status', 1)->whereNull('a.id')
             ->select('k.id', 'k.nama_kelas')->get();
@@ -167,21 +173,17 @@ class DashboardController extends Controller
         $totalTerlambat = $keterlambatanHariIni->count();
 
         $dispensasiMenunggu = DB::table('dispensasi as d')
-            ->join('organisasi as o', 'o.id', '=', 'd.organisasi_id')
-            ->join('status_verifikasi as sv', 'sv.id', '=', 'd.status_verifikasi_id')
-            ->where('d.status_verifikasi_id', 1)->where('d.status', 1)
+            ->leftJoin('organisasi as o', 'o.id', '=', 'd.organisasi_id')
+            ->join('status_validasi as sv', 'sv.id', '=', 'd.status_validasi_id')
+            ->where('d.status_validasi_id', 2)->where('d.status', 1)
             ->select('d.*', 'o.nama_organisasi', 'sv.nama_status as nama_verifikasi')
             ->orderByDesc('d.id')->get();
 
-        $absensiMenungguVerif = DB::table('absensi as a')
-            ->join('kelas as k', 'k.id', '=', 'a.kelas_id')
-            ->where('a.status_verifikasi_id', 3)->where('a.status', 1)
-            ->select('a.*', 'k.nama_kelas')
-            ->orderByDesc('a.tanggal')->get();
-
-        $tamuHariIni = DB::table('daftar_tamu')
-            ->whereDate('tanggal_kunjungan', $today)->where('status', 1)
-            ->orderByDesc('id')->get();
+        $daftarTamu = DB::table('daftar_tamu')
+            ->where('status', 1)
+            ->orderByDesc('tanggal_kunjungan')
+            ->orderByDesc('id')
+            ->limit(5)->get();
 
         $viewMode = $asAdmin ? 'piket' : null;
 
@@ -190,8 +192,7 @@ class DashboardController extends Controller
             'totalKelas', 'kelasUdahAbsen', 'kelasBelumAbsen',
             'totalIzin', 'totalSakit', 'totalAlpha', 'totalDispen',
             'keterlambatanHariIni', 'totalTerlambat',
-            'dispensasiMenunggu', 'absensiMenungguVerif',
-            'tamuHariIni', 'viewMode'
+            'dispensasiMenunggu', 'daftarTamu', 'viewMode'
         ));
     }
 
@@ -250,30 +251,33 @@ class DashboardController extends Controller
 
         // Semua absensi kelas ini yang menunggu validasi wali
         $absensiMenungguValidasi = DB::table('absensi as a')
-            ->join('status_verifikasi as sv', 'sv.id', '=', 'a.status_verifikasi_id')
+            ->join('status_validasi as sv', 'sv.id', '=', 'a.status_validasi_id')
             ->where('a.kelas_id', $kelas->id)
-            ->where('a.status_verifikasi_id', 3)
+            ->where('a.status_validasi_id', 3)
             ->where('a.status', 1)
             ->select('a.*', 'sv.nama_status as nama_verifikasi')
             ->orderByDesc('a.tanggal')->get();
 
-        $riwayatAbsensi = DB::table('absensi as a')
-            ->join('status_verifikasi as sv', 'sv.id', '=', 'a.status_verifikasi_id')
-            ->where('a.kelas_id', $kelas->id)->where('a.status', 1)
-            ->whereBetween('a.tanggal', [Carbon::today()->subDays(6), Carbon::today()])
-            ->select('a.*', 'sv.nama_status as nama_verifikasi')
-            ->orderByDesc('a.tanggal')->get();
-
-        $keterlambatanBulanIni = DB::table('keterlambatan as kt')
+        $keterlambatanQuery = DB::table('keterlambatan as kt')
             ->join('siswa as s', 's.id', '=', 'kt.siswa_id')
             ->where('s.kelas_id', $kelas->id)
-            ->whereMonth('kt.waktu_masuk', $today->month)
-            ->whereYear('kt.waktu_masuk', $today->year)
             ->where('kt.status', 1)
-            ->select('kt.*', 's.nama_siswa')
+            ->select('kt.id', 's.nama_siswa', 'kt.waktu_masuk as waktu', 'kt.alasan as keterangan', DB::raw("'Terlambat' as jenis"))
             ->orderByDesc('kt.waktu_masuk')->limit(10)->get();
 
-        $totalTerlambat = $keterlambatanBulanIni->count();
+        $absensiDesc = DB::table('absensi_detail as ad')
+            ->join('absensi as a', 'a.id', '=', 'ad.absensi_id')
+            ->join('siswa as s', 's.id', '=', 'ad.siswa_id')
+            ->join('status_absensi as sa', 'sa.id', '=', 'ad.status_absensi_id')
+            ->where('s.kelas_id', $kelas->id)
+            ->whereIn('ad.status_absensi_id', [1, 2, 3, 4])
+            ->where('ad.status', 1)
+            ->where('ad.is_full_day', 1)
+            ->where('a.status', 1)
+            ->select('ad.id', 's.nama_siswa', 'a.tanggal as waktu', 'ad.keterangan as keterangan', 'sa.keterangan as jenis')
+            ->orderByDesc('a.tanggal')->limit(10)->get();
+
+        $laporanAll = $keterlambatanQuery->concat($absensiDesc)->sortByDesc('waktu')->take(3)->values();
 
         $dispensasiAktif = DB::table('dispensasi as d')
             ->join('dispensasi_detail as dd', 'dd.dispensasi_id', '=', 'd.id')
@@ -287,7 +291,7 @@ class DashboardController extends Controller
             'user', 'kelas', 'daftarKelas', 'periodeAktif', 'viewMode',
             'totalSiswa', 'totalHadir', 'totalIzin', 'totalSakit', 'totalAlpha', 'totalDispen',
             'absensiHariIni', 'absensiMenungguValidasi',
-            'riwayatAbsensi', 'keterlambatanBulanIni', 'totalTerlambat',
+            'laporanAll',
             'dispensasiAktif'
         ));
     }
@@ -331,7 +335,7 @@ class DashboardController extends Controller
             ->whereDate('tanggal', $today)->where('status', 1)->first();
 
         $statusVerifHariIni = $absensiHariIni
-            ? DB::table('status_verifikasi')->where('id', $absensiHariIni->status_verifikasi_id)->first()
+            ? DB::table('status_validasi')->where('id', $absensiHariIni->status_validasi_id)->first()
             : null;
 
         $rekap = collect();
@@ -350,17 +354,17 @@ class DashboardController extends Controller
         $totalAlpha  = $rekap->get(3, 0);
         $totalDispen = $rekap->get(4, 0);
 
-        // Absensi yang perlu diisi (status_verifikasi_id = 1 = Menunggu Pengisian)
+        // Absensi yang perlu diisi (status_validasi_id = 1 = Menunggu Pengisian)
         $absensiPerluDiisi = DB::table('absensi as a')
-            ->join('status_verifikasi as sv', 'sv.id', '=', 'a.status_verifikasi_id')
+            ->join('status_validasi as sv', 'sv.id', '=', 'a.status_validasi_id')
             ->where('a.kelas_id', $kelas->id)
-            ->where('a.status_verifikasi_id', 1)
+            ->where('a.status_validasi_id', 1)
             ->where('a.status', 1)
             ->select('a.*', 'sv.nama_status as nama_verifikasi')
             ->orderByDesc('a.tanggal')->get();
 
         $riwayatAbsensi = DB::table('absensi as a')
-            ->join('status_verifikasi as sv', 'sv.id', '=', 'a.status_verifikasi_id')
+            ->join('status_validasi as sv', 'sv.id', '=', 'a.status_validasi_id')
             ->where('a.kelas_id', $kelas->id)->where('a.status', 1)
             ->whereBetween('a.tanggal', [Carbon::today()->subDays(6), Carbon::today()])
             ->select('a.*', 'sv.nama_status as nama_verifikasi')

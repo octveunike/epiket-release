@@ -2331,6 +2331,7 @@ table.dataTable thead th.dt-type-integer {
 }
  
 @media (max-width: 768px) {
+    /* Existing Dashboard stats */
     .dash-stat-grid-5 {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -2342,10 +2343,81 @@ table.dataTable thead th.dt-type-integer {
     .dash-filter-form select {
         width: 140px;
     }
+
+    /* Core layout responsive rules */
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.mobile-active {
+        transform: translateX(0);
+    }
+
+    .sidebar-close-btn {
+        display: block !important;
+    }
+
+    .main {
+        margin-left: 0 !important;
+    }
+
+    .header-main {
+        left: 0 !important;
+        padding: 0 16px;
+    }
+
+    /* Grid layout adjustments */
+    .stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .page-header > div:last-child,
+    .page-header form {
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .page-header .btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* Form and Table controls adjustments */
+    .card form[method="GET"] {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .card form[method="GET"] .form-group,
+    .card form[method="GET"] .btn,
+    .card form[method="GET"] a.btn {
+        width: 100%;
+        min-width: unset;
+        margin-bottom: 8px !important;
+    }
+
+    .card form[method="GET"] .btn {
+        margin-bottom: 0 !important;
+    }
+
+    /* Modals responsive */
+    .confirm-box, .modal-box {
+        width: 90% !important;
+        margin: 0 auto;
+    }
 }
  
 @media (max-width: 480px) {
-    .dash-stat-grid-5 {
+    .dash-stat-grid-5,
+    .stat-grid {
         grid-template-columns: 1fr;
     }
 }

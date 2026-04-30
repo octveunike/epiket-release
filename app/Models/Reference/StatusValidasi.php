@@ -4,9 +4,9 @@ namespace App\Models\Reference;
 
 use Illuminate\Database\Eloquent\Model;
 
-class StatusVerifikasi extends Model
+class StatusValidasi extends Model
 {
-    protected $table = 'status_verifikasi';
+    protected $table = 'status_validasi';
 
     protected $fillable = [
         'nama_status', 'keterangan', 'status',

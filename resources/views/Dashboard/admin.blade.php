@@ -157,45 +157,13 @@
         <div class="stat-icon amber"><i class="ri-user-received-line"></i></div>
         <div class="stat-info">
             <div class="stat-title">Tamu Hari Ini</div>
-            <div class="stat-number">{{ $tamuHariIni->count() }}</div>
+            <div class="stat-number">{{ $totalTamuHariIni }}</div>
         </div>
     </div>
 </div>
 
-{{-- ===== TABEL 2 KOLOM ===== --}}
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
-
-    {{-- Absensi Menunggu Verifikasi --}}
-    <div class="card" style="margin-bottom:0;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-            <div class="card-title" style="margin-bottom:0;">
-                <i class="ri-file-check-line" style="color:var(--primary);"></i> Absensi Menunggu Verif
-            </div>
-            <a href="{{ route('Absensi.walikelas.index') }}" class="btn btn-sm btn-secondary">
-                Semua <i class="ri-arrow-right-line"></i>
-            </a>
-        </div>
-        @if($absensiMenungguVerif->isEmpty())
-            <div class="empty-state">
-                <i class="ri-checkbox-circle-line"></i>
-                <p>Tidak ada yang menunggu verifikasi</p>
-            </div>
-        @else
-            @foreach($absensiMenungguVerif as $ab)
-            <div class="ab-infobar" style="margin-bottom:8px; padding:10px 14px;">
-                <div class="ab-infobar-left" style="font-size:13px;">
-                    <i class="ri-building-4-line"></i>
-                    <strong>{{ $ab->nama_kelas }}</strong>
-                    <span class="ab-infobar-sep">·</span>
-                    <span>{{ \Carbon\Carbon::parse($ab->tanggal)->translatedFormat('d M Y') }}</span>
-                </div>
-                <a href="{{ route('Absensi.show', $ab->id) }}" class="btn btn-sm btn-primary">
-                    <i class="ri-eye-line"></i>
-                </a>
-            </div>
-            @endforeach
-        @endif
-    </div>
+{{-- ===== DISPENSASI TERBARU ===== --}}
+<div style="margin-bottom:20px;">
 
     {{-- Dispensasi Terbaru --}}
     <div class="card" style="margin-bottom:0;">
@@ -204,7 +172,7 @@
                 <i class="ri-file-paper-2-line" style="color:var(--primary);"></i> Dispensasi Terbaru
             </div>
             <a href="{{ route('Dispensasi.index') }}" class="btn btn-sm btn-secondary">
-                Semua <i class="ri-arrow-right-line"></i>
+                Lihat Selengkapnya <i class="ri-arrow-right-line"></i>
             </a>
         </div>
         @if($dispensasiTerbaru->isEmpty())
@@ -213,19 +181,36 @@
                 <p>Belum ada data dispensasi</p>
             </div>
         @else
-            @foreach($dispensasiTerbaru as $d)
-            <div class="ab-infobar" style="margin-bottom:8px; padding:10px 14px;">
-                <div class="ab-infobar-left" style="font-size:13px; min-width:0;">
-                    <i class="ri-team-line"></i>
-                    <div style="min-width:0;">
-                        <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px;">{{ $d->kegiatan }}</div>
-                        <div style="font-size:11px; color:var(--text-muted);">{{ $d->nama_organisasi }}</div>
-                    </div>
-                </div>
-                @php $dc = match((int)$d->status_verifikasi_id){ 5=>'badge-success',1=>'badge-warning',default=>'badge-info'}; @endphp
-                <span class="badge {{ $dc }}">{{ $d->nama_verifikasi }}</span>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Kegiatan</th>
+                            <th>Organisasi</th>
+                            <th>Mulai</th>
+                            <th>Selesai</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($dispensasiTerbaru->take(3) as $i => $d)
+                        <tr>
+                            <td class="col-no">{{ $i + 1 }}</td>
+                            <td>{{ $d->kegiatan }}</td>
+                            <td>{{ $d->nama_organisasi ?? '—' }}</td>
+                            <td class="col-center">{{ \Carbon\Carbon::parse($d->waktu_mulai)->format('d M Y') }}</td>
+                            <td class="col-center">{{ \Carbon\Carbon::parse($d->waktu_selesai)->format('d M Y') }}</td>
+                            <td class="col-center">
+                                <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-primary">
+                                    <i class="ri-eye-line"></i> Lihat
+                                </a>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
-            @endforeach
         @endif
     </div>
 </div>
@@ -241,7 +226,7 @@
                 <span class="badge badge-warning" style="margin-left:6px;">{{ $totalTerlambat }}</span>
             </div>
             <a href="{{ route('Keterlambatan.index') }}" class="btn btn-sm btn-secondary">
-                Semua <i class="ri-arrow-right-line"></i>
+                Lihat Selengkapnya <i class="ri-arrow-right-line"></i>
             </a>
         </div>
         @if($keterlambatanTerbaru->isEmpty())
@@ -260,7 +245,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($keterlambatanTerbaru as $kt)
+                        @foreach($keterlambatanTerbaru->take(3) as $kt)
                         <tr>
                             <td>{{ $kt->nama_siswa }}</td>
                             <td class="col-center"><span class="badge badge-info">{{ $kt->nama_kelas }}</span></td>
@@ -279,36 +264,35 @@
     <div class="card" style="margin-bottom:0;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
             <div class="card-title" style="margin-bottom:0;">
-                <i class="ri-user-received-line" style="color:var(--primary);"></i> Daftar Tamu Hari Ini
-                <span class="badge badge-primary" style="margin-left:6px;">{{ $tamuHariIni->count() }}</span>
+                <i class="ri-user-received-line" style="color:var(--primary);"></i> Daftar Tamu
+                <span class="badge badge-primary" style="margin-left:6px;">{{ $daftarTamu->count() }}</span>
             </div>
             <div style="display:flex; gap:6px;">
-                <a href="{{ route('DaftarTamu.create') }}" class="btn btn-sm btn-primary">
-                    <i class="ri-add-line"></i>
-                </a>
                 <a href="{{ route('DaftarTamu.index') }}" class="btn btn-sm btn-secondary">
-                    Semua <i class="ri-arrow-right-line"></i>
+                    Lihat Selengkapnya <i class="ri-arrow-right-line"></i>
                 </a>
             </div>
         </div>
-        @if($tamuHariIni->isEmpty())
+        @if($daftarTamu->isEmpty())
             <div class="empty-state">
                 <i class="ri-user-received-line"></i>
-                <p>Belum ada tamu hari ini</p>
+                <p>Belum ada daftar tamu</p>
             </div>
         @else
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
+                            <th class="col-center">Tanggal</th>
                             <th>Nama</th>
                             <th>Lembaga</th>
                             <th>Dituju</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($tamuHariIni as $t)
+                        @foreach($daftarTamu->take(3) as $t)
                         <tr>
+                            <td class="col-center text-muted-sm" style="white-space:nowrap;">{{ \Carbon\Carbon::parse($t->tanggal_kunjungan)->translatedFormat('d M Y') }}</td>
                             <td><strong>{{ $t->nama }}</strong></td>
                             <td>{{ $t->lembaga_organisasi ?? '-' }}</td>
                             <td>{{ $t->orang_yang_dituju ?? '-' }}</td>
@@ -321,26 +305,6 @@
     </div>
 </div>
 
-{{-- ===== AKSI CEPAT ===== --}}
-<div class="card">
-    <div class="card-title"><i class="ri-flashlight-line" style="color:var(--primary);"></i> Aksi Cepat</div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <a href="{{ route('DaftarTamu.create') }}" class="btn btn-secondary">
-            <i class="ri-user-add-line"></i> Tambah Tamu
-        </a>
-        <a href="{{ route('Keterlambatan.create') }}" class="btn btn-secondary">
-            <i class="ri-time-line"></i> Catat Keterlambatan
-        </a>
-        <a href="{{ route('Dispensasi.index') }}" class="btn btn-secondary">
-            <i class="ri-file-paper-2-line"></i> Kelola Dispensasi
-        </a>
-        <a href="{{ route('Laporan.index') }}" class="btn btn-secondary">
-            <i class="ri-bar-chart-2-line"></i> Laporan
-        </a>
-        <a href="{{ route('Absensi.index') }}" class="btn btn-secondary">
-            <i class="ri-calendar-check-line"></i> Data Absensi
-        </a>
-    </div>
-</div>
+
 
 @endsection

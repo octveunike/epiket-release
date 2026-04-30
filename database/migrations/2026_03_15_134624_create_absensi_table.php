@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('kelas_id')->nullable()->constrained('kelas')->nullOnDelete();
             $table->dateTime('tanggal')->nullable();
-            $table->foreignId('status_verifikasi_id')->nullable()->constrained('status_verifikasi')->nullOnDelete();
+            $table->foreignId('status_validasi_id')->nullable()->constrained('status_validasi')->nullOnDelete();
             $table->foreignId('periode_akademik_id')->nullable()->constrained('periode_akademik')->nullOnDelete();
             $table->tinyInteger('status')->nullable();
             $table->string('user_input', 100)->nullable();

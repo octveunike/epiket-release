@@ -104,8 +104,8 @@
 
                         <div class="form-group" style="margin-bottom:0;flex:0 0 140px;">
                             <label class="form-label">Waktu Masuk <span class="required">*</span></label>
-                            <input type="time" name="waktu_masuk" class="form-control"
-                                value="{{ old('waktu_masuk', now()->format('H:i')) }}" required>
+                            <input type="time" name="waktu_masuk" id="waktu-masuk-input" class="form-control"
+                                value="{{ old('waktu_masuk') }}" required>
                             @error('waktu_masuk')<small style="color:#ef4444;">{{ $message }}</small>@enderror
                         </div>
 
@@ -178,25 +178,19 @@
 @endif
 
 {{-- Modal Hapus --}}
-<div class="modal-overlay" id="deleteModal">
-    <div class="modal-box">
-        <div class="modal-header">
-            <span class="modal-title">Konfirmasi Hapus</span>
-            <button class="modal-close" onclick="closeDeleteModal()"><i class="ri-close-line"></i></button>
-        </div>
-        <div class="modal-body">
-            <div class="modal-icon danger"><i class="ri-error-warning-line"></i></div>
-            <p class="modal-confirm-text">
-                Hapus data keterlambatan ini?<br>
-                <small class="text-danger-sm">Status absensi siswa akan dikembalikan ke Hadir.</small>
-            </p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Batal</button>
-            <form id="delete-form" method="POST" style="display:inline;">
-                @csrf @method('DELETE')
-                <button type="submit" class="btn btn-danger"><i class="ri-delete-bin-line"></i> Hapus</button>
+<div class="confirm-overlay" id="deleteModal">
+    <div class="confirm-box">
+        <div class="confirm-icon">!</div>
+        <h3>Hapus Keterlambatan?</h3>
+        <p>Data yang dihapus tidak dapat dikembalikan.<br>
+        <small class="text-danger-sm">Status absensi siswa akan dikembalikan ke Hadir.</small></p>
+        <div class="confirm-actions">
+            <form id="delete-form" method="POST">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger">Ya, Hapus</button>
             </form>
+            <button onclick="closeDeleteModal()" class="btn btn-secondary">Batal</button>
         </div>
     </div>
 </div>
@@ -205,12 +199,22 @@
 
 @push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    var timeInput = document.getElementById('waktu-masuk-input');
+    if (timeInput && !timeInput.value) {
+        var now = new Date();
+        var h = String(now.getHours()).padStart(2, '0');
+        var m = String(now.getMinutes()).padStart(2, '0');
+        timeInput.value = h + ':' + m;
+    }
+});
+
 function showDeleteModal(id) {
     document.getElementById('delete-form').action = "{{ route('Keterlambatan.destroy', '') }}/" + id;
-    document.getElementById('deleteModal').classList.add('active');
+    document.getElementById('deleteModal').classList.add('show');
 }
 function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.remove('active');
+    document.getElementById('deleteModal').classList.remove('show');
 }
 const dm = document.getElementById('deleteModal');
 if (dm) dm.addEventListener('click', function(e) {

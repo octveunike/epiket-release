@@ -78,8 +78,11 @@
             <tbody>
                 @forelse ($absensiList as $absensi)
                     @php
-                        $sudahDiisi = $absensi->status_verifikasi_id !== $statusMenungguPengisianId;
-                        $disetujui  = in_array($absensi->status_verifikasi_id, [5]);
+                        // Hanya status Menunggu Pengisian (1) dan Perlu Revisi (6) yang masih bisa di-edit/hapus.
+                        // Status sudah-submit (Menunggu Wali, Menunggu Piket, Menunggu Pembina, Disetujui) → Detail saja.
+                        $perluRevisi = $absensi->status_validasi_id == $statusPerluRevisiId;
+                        $belumDiisi  = $absensi->status_validasi_id == $statusMenungguPengisianId;
+                        $editable    = $belumDiisi || $perluRevisi;
                     @endphp
                     <tr>
                         <td class="col-no">{{ $loop->iteration }}</td>
@@ -91,19 +94,14 @@
                         <td>{{ $absensi->periodeAkademik->nama_periode ?? '—' }}</td>
                         <td class="col-center">
                             <span style="font-size:13px;color:var(--text-main);">
-                                {{ $absensi->statusVerifikasi->nama_status ?? 'Menunggu Pengisian' }}
+                                {{ $absensi->statusValidasi->nama_status ?? 'Menunggu Pengisian' }}
                             </span>
                         </td>
                         <td class="col-center">
-                            @if (!$sudahDiisi)
+                            @if ($editable)
                                 <a href="{{ route('Absensi.isiAbsensi', $absensi->id) }}"
                                     class="btn btn-sm btn-primary">
-                                    <i class="ri-edit-line"></i> Isi Absensi
-                                </a>
-                            @elseif (!$disetujui)
-                                <a href="{{ route('Absensi.isiAbsensi', $absensi->id) }}"
-                                    class="btn btn-sm btn-primary">
-                                    <i class="ri-edit-line"></i> Edit
+                                    <i class="ri-edit-line"></i> {{ $perluRevisi ? 'Edit' : 'Isi Absensi' }}
                                 </a>
                                 <button type="button" class="btn btn-sm btn-danger"
                                     onclick="showDeleteModal({{ $absensi->id }}, '{{ \Carbon\Carbon::parse($absensi->tanggal)->format('d/m/Y') }}', '{{ $absensi->kelas->nama_kelas ?? '' }}')">

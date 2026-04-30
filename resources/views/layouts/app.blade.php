@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E-PIKET — @yield('title', 'Dashboard')</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="{{ asset('assets/datatables/datatables.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/remixicon/remixicon.css') }}">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
@@ -51,17 +55,21 @@
             const main    = document.querySelector('.main');
             const header  = document.querySelector('.header-main');
 
-            const isHidden = sidebar.classList.toggle('sidebar-hidden');
-
-            if (isHidden) {
-                main.style.marginLeft = '0';
-                header.style.left     = '0';
-                overlay.style.display = 'none';
-            } else {
-                main.style.marginLeft = 'var(--sidebar-width)';
-                header.style.left     = 'var(--sidebar-width)';
-                if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 768) {
+                const isActive = sidebar.classList.toggle('mobile-active');
+                if (isActive) {
                     overlay.style.display = 'block';
+                } else {
+                    overlay.style.display = 'none';
+                }
+            } else {
+                const isHidden = sidebar.classList.toggle('sidebar-hidden');
+                if (isHidden) {
+                    main.style.marginLeft = '0';
+                    header.style.left     = '0';
+                } else {
+                    main.style.marginLeft = 'var(--sidebar-width)';
+                    header.style.left     = 'var(--sidebar-width)';
                 }
             }
         }
@@ -72,10 +80,14 @@
             const main    = document.querySelector('.main');
             const header  = document.querySelector('.header-main');
 
-            sidebar.classList.add('sidebar-hidden');
-            main.style.marginLeft = '0';
-            header.style.left     = '0';
-            overlay.style.display = 'none';
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('mobile-active');
+                overlay.style.display = 'none';
+            } else {
+                sidebar.classList.add('sidebar-hidden');
+                main.style.marginLeft = '0';
+                header.style.left     = '0';
+            }
         }
 
         /* ---- Dropdown toggle ---- */

@@ -32,18 +32,25 @@
 
                 <div class="form-group">
                     <label class="form-label">User (Akun Login)</label>
-                    <select name="user_id" class="form-control">
-                        <option value="">-- Tidak Terhubung ke User --</option>
-                        @foreach ($users as $u)
-                            <option value="{{ $u->id }}" {{ old('user_id', $Staff->user_id) == $u->id ? 'selected' : '' }}>
-                                {{ $u->name }} ({{ $u->email }})
-                            </option>
-                        @endforeach
-                    </select>
+                    <div style="display:flex; gap:8px; align-items:stretch;">
+                        <select name="user_id" id="staff-user-select" class="form-control" style="flex:1;">
+                            <option value="">-- Tidak Terhubung ke User --</option>
+                            @foreach ($users as $u)
+                                <option value="{{ $u->id }}" {{ old('user_id', $Staff->user_id) == $u->id ? 'selected' : '' }}>
+                                    {{ $u->nama }} ({{ $u->username }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn btn-secondary" onclick="openBuatAkunModal()" style="white-space:nowrap;">
+                            <i class="ri-user-add-line"></i> Buat Akun User
+                        </button>
+                    </div>
                     @error('user_id')<small style="color:#ef4444;">{{ $message }}</small>@enderror
                 </div>
 
             </div>
+
+            @include('Staff._buat-akun-modal')
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">

@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Apps\Absensi;
 use App\Models\Apps\Kelas;
 use App\Models\Apps\PeriodeAkademik;
-use App\Models\Reference\StatusVerifikasi;
+use App\Models\Reference\StatusValidasi;
 use App\Services\DispensasiPropagator;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -36,7 +36,7 @@ class GenerateDailyAbsensi extends Command
             return self::FAILURE;
         }
 
-        $statusMenungguPengisianId = StatusVerifikasi::where('nama_status', 'Menunggu Pengisian')
+        $statusMenungguPengisianId = StatusValidasi::where('nama_status', 'Menunggu Pengisian')
             ->where('status', 1)
             ->value('id');
 
@@ -66,7 +66,7 @@ class GenerateDailyAbsensi extends Command
                 $absensi = Absensi::create([
                     'kelas_id'             => $kelas->id,
                     'tanggal'              => $date->toDateString(),
-                    'status_verifikasi_id' => $statusMenungguPengisianId,
+                    'status_validasi_id' => $statusMenungguPengisianId,
                     'periode_akademik_id'  => $periodeAktif->id,
                     'status'               => 1,
                     'user_input'           => 'system',

@@ -67,17 +67,28 @@ class LaporanController extends Controller
         $rows = [];
 
         // 1. Absensi per siswa (hanya yang Disetujui)
-        if (!$kategori || $kategori === 'absensi') {
+        // Kategori 'absensi' = semua non-dispen/terlambat
+        // Kategori 'alpha'/'sakit'/'izin' = subset absensi berdasarkan status_absensi_id
+        $absensiIds = ['alpha' => 3, 'sakit' => 2, 'izin' => 1];
+        $isAbsensiKategori = !$kategori || $kategori === 'absensi' || array_key_exists($kategori, $absensiIds);
+
+        if ($isAbsensiKategori) {
             $query = AbsensiDetail::with(['absensi.kelas', 'siswa', 'statusAbsensi'])
                 ->where('status', 1)
                 ->whereNotNull('status_absensi_id')
-                ->where('status_absensi_id', '!=', 4) // Dispen sudah dilaporkan lewat kategori Dispensasi
+                ->whereNotIn('status_absensi_id', [4, 5])
                 ->whereHas('absensi', function ($q) use ($dari, $sampai, $kelasId) {
-                    $q->where('status', 1)->where('status_verifikasi_id', 5);
+                    $q->where('status', 1)->where('status_validasi_id', 5);
                     if ($dari)    $q->whereDate('tanggal', '>=', $dari);
                     if ($sampai)  $q->whereDate('tanggal', '<=', $sampai);
                     if ($kelasId) $q->where('kelas_id', $kelasId);
                 });
+
+            // Filter spesifik alpha/sakit/izin
+            if (array_key_exists($kategori, $absensiIds)) {
+                $query->where('status_absensi_id', $absensiIds[$kategori]);
+            }
+
             if ($nama) {
                 $query->whereHas('siswa', fn($q) => $q->where('nama_siswa', 'like', "%{$nama}%"));
             }
@@ -103,7 +114,7 @@ class LaporanController extends Controller
             $query = Keterlambatan::with(['siswa', 'absensi.kelas'])
                 ->where('status', 1)
                 ->whereHas('absensi', function ($q) use ($dari, $sampai, $kelasId) {
-                    $q->where('status', 1)->where('status_verifikasi_id', 5);
+                    $q->where('status', 1)->where('status_validasi_id', 5);
                     if ($dari)    $q->whereDate('tanggal', '>=', $dari);
                     if ($sampai)  $q->whereDate('tanggal', '<=', $sampai);
                     if ($kelasId) $q->where('kelas_id', $kelasId);

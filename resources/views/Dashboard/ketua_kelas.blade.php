@@ -55,7 +55,7 @@
         @if($absensiHariIni)
             <span class="ab-infobar-sep">|</span>
             @php
-                $cls = match((int)$absensiHariIni->status_verifikasi_id) {
+                $cls = match((int)$absensiHariIni->status_validasi_id) {
                     5=>'badge-success', 3=>'badge-warning', 1=>'badge-info', default=>'badge-info'
                 };
             @endphp
@@ -160,8 +160,6 @@
 </div>
 
 {{-- ===== SISWA TIDAK HADIR + RIWAYAT ===== --}}
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-
     {{-- Siswa Tidak Hadir Hari Ini --}}
     <div class="card" style="margin-bottom:0;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
@@ -203,47 +201,6 @@
             @endforeach
         @endif
     </div>
-
-    {{-- Riwayat 7 Hari --}}
-    <div class="card" style="margin-bottom:0;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-            <div class="card-title" style="margin-bottom:0;">
-                <i class="ri-history-line" style="color:var(--primary);"></i> Riwayat 7 Hari Terakhir
-            </div>
-            <a href="{{ route('Absensi.index') }}" class="btn btn-sm btn-secondary">
-                Semua <i class="ri-arrow-right-line"></i>
-            </a>
-        </div>
-        @if($riwayatAbsensi->isEmpty())
-            <div class="empty-state">
-                <i class="ri-file-list-line"></i>
-                <p>Belum ada riwayat absensi</p>
-            </div>
-        @else
-            @foreach($riwayatAbsensi as $ab)
-            <div class="ab-infobar" style="margin-bottom:8px; padding:10px 14px;">
-                <div class="ab-infobar-left" style="font-size:13px;">
-                    <i class="ri-calendar-line"></i>
-                    <strong>{{ \Carbon\Carbon::parse($ab->tanggal)->translatedFormat('l, d M') }}</strong>
-                    <span class="ab-infobar-sep">·</span>
-                    <span>{{ $ab->user_input ?? '-' }}</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:6px;">
-                    @php
-                        $cls = match((int)$ab->status_verifikasi_id) {
-                            5=>'badge-success', 3=>'badge-warning', 1=>'badge-info', default=>'badge-info'
-                        };
-                    @endphp
-                    <span class="badge {{ $cls }}" style="font-size:10.5px;">{{ $ab->nama_verifikasi }}</span>
-                    <a href="{{ route('Absensi.show', $ab->id) }}" class="btn btn-sm btn-secondary" style="padding:4px 8px;">
-                        <i class="ri-eye-line"></i>
-                    </a>
-                </div>
-            </div>
-            @endforeach
-        @endif
-    </div>
-</div>
 
 @endif {{-- end if kelas --}}
 @endsection

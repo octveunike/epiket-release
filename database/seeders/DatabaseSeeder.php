@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
             UserRoleSeeder::class,
             StatusAbsensiSeeder::class,
             StatusSiswaSeeder::class,
-            StatusVerifikasiSeeder::class,
+            StatusValidasiSeeder::class,
             JamAbsensiSeeder::class,
             PeriodeAkademikSeeder::class,
             KelasSeeder::class,

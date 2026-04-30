@@ -7,7 +7,7 @@ use App\Models\Apps\Absensi;
 use App\Models\Apps\AbsensiDetail;
 use App\Models\Apps\Dispensasi;
 use App\Models\Apps\DispensasiDetail;
-use App\Models\Reference\StatusVerifikasi;
+use App\Models\Reference\StatusValidasi;
 use Carbon\Carbon;
 
 class DispensasiPropagator
@@ -28,7 +28,7 @@ class DispensasiPropagator
 
         $tanggal = Carbon::parse($absensi->tanggal)->toDateString();
 
-        $statusDisetujuiId = StatusVerifikasi::where('nama_status', 'Disetujui')
+        $statusDisetujuiId = StatusValidasi::where('nama_status', 'Disetujui')
             ->where('status', 1)
             ->value('id');
         if (!$statusDisetujuiId) {
@@ -36,7 +36,7 @@ class DispensasiPropagator
         }
 
         $dispensasiList = Dispensasi::where('status', 1)
-            ->where('status_verifikasi_id', $statusDisetujuiId)
+            ->where('status_validasi_id', $statusDisetujuiId)
             ->whereDate('waktu_mulai', '<=', $tanggal)
             ->whereDate('waktu_selesai', '>=', $tanggal)
             ->get(['id', 'kegiatan']);

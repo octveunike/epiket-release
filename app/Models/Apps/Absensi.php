@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Apps\Kelas;
 use App\Models\Apps\PeriodeAkademik;
-use App\Models\Reference\StatusVerifikasi;
+use App\Models\Reference\StatusValidasi;
 use App\Models\User;
 
 class Absensi extends Model
@@ -18,7 +18,7 @@ class Absensi extends Model
     protected $fillable = [
         'kelas_id',
         'tanggal',
-        'status_verifikasi_id',
+        'status_validasi_id',
         'periode_akademik_id',
         'status',
         'user_input',
@@ -39,9 +39,9 @@ class Absensi extends Model
         return $this->belongsTo(PeriodeAkademik::class, 'periode_akademik_id');
     }
 
-    public function statusVerifikasi()
+    public function statusValidasi()
     {
-        return $this->belongsTo(StatusVerifikasi::class, 'status_verifikasi_id');
+        return $this->belongsTo(StatusValidasi::class, 'status_validasi_id');
     }
 
     public function details()

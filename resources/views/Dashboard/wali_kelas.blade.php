@@ -144,82 +144,53 @@
     @endif
 </div>
 
-{{-- ===== RIWAYAT + KETERLAMBATAN ===== --}}
-<div class="dash-grid-2">
-
-    {{-- Riwayat 7 Hari --}}
-    <div class="card">
-        <div class="dash-section-header">
-            <div class="dash-section-title">
-                <i class="ri-history-line"></i> Riwayat 7 Hari Terakhir
-            </div>
-            <a href="{{ route('Absensi.walikelas.index') }}" class="btn btn-sm btn-secondary">
-                Semua <i class="ri-arrow-right-line"></i>
-            </a>
+{{-- ===== LAPORAN ALL ===== --}}
+<div class="card">
+    <div class="dash-section-header">
+        <div class="dash-section-title">
+            <i class="ri-file-list-3-line"></i> Laporan All
         </div>
-        @if($riwayatAbsensi->isEmpty())
-            <div class="empty-state">
-                <i class="ri-file-list-line"></i>
-                <p>Belum ada riwayat absensi</p>
-            </div>
-        @else
-            @foreach($riwayatAbsensi as $ab)
-            <div class="ab-infobar dash-row-item">
-                <div class="ab-infobar-left">
-                    <i class="ri-calendar-line"></i>
-                    <strong>{{ \Carbon\Carbon::parse($ab->tanggal)->translatedFormat('l, d M') }}</strong>
-                    <span class="ab-infobar-sep">·</span>
-                    <span>{{ $ab->user_input ?? '-' }}</span>
-                </div>
-                <div class="dash-row-actions">
-                    @php
-                        $cls = match((int)$ab->status_verifikasi_id) {
-                            5=>'badge-success', 3=>'badge-warning', default=>'badge-info'
-                        };
-                    @endphp
-                    <span class="badge {{ $cls }}">{{ $ab->nama_verifikasi }}</span>
-                    <a href="{{ route('Absensi.show', $ab->id) }}" class="btn btn-sm btn-secondary dash-btn-icon-only">
-                        <i class="ri-eye-line"></i>
-                    </a>
-                </div>
-            </div>
-            @endforeach
-        @endif
+        <a href="{{ route('Laporan.index') }}" class="btn btn-sm btn-secondary">
+            Lihat Selengkapnya <i class="ri-arrow-right-line"></i>
+        </a>
     </div>
-
-    {{-- Keterlambatan Bulan Ini --}}
-    <div class="card">
-        <div class="dash-section-header">
-            <div class="dash-section-title">
-                <i class="ri-time-line"></i> Keterlambatan Bulan Ini
-                <span class="badge badge-warning dash-badge-count">{{ $totalTerlambat }}</span>
-            </div>
-            <a href="{{ route('Keterlambatan.index') }}" class="btn btn-sm btn-secondary">
-                Semua <i class="ri-arrow-right-line"></i>
-            </a>
+    @if($laporanAll->isEmpty())
+        <div class="empty-state">
+            <i class="ri-file-list-3-line"></i>
+            <p>Belum ada rekaman laporan absensi/keterlambatan</p>
         </div>
-        @if($keterlambatanBulanIni->isEmpty())
-            <div class="empty-state">
-                <i class="ri-time-line"></i>
-                <p>Tidak ada keterlambatan bulan ini</p>
-            </div>
-        @else
-            @foreach($keterlambatanBulanIni as $kt)
-            <div class="ab-infobar dash-kt-item">
-                <div class="ab-infobar-left">
-                    <i class="ri-user-line"></i>
-                    <div>
-                        <strong>{{ $kt->nama_siswa }}</strong>
-                        <div class="dash-kt-reason">{{ $kt->alasan ?? '-' }}</div>
-                    </div>
+    @else
+        @foreach($laporanAll as $item)
+        <div class="ab-infobar dash-kt-item">
+            <div class="ab-infobar-left">
+                <i class="ri-user-line"></i>
+                <div>
+                    <strong>{{ $item->nama_siswa }}</strong>
+                    <div class="dash-kt-reason">{{ rtrim($item->keterangan, '.') ?: '-' }}</div>
                 </div>
-                <span class="badge badge-warning">
-                    {{ \Carbon\Carbon::parse($kt->waktu_masuk)->format('d M, H:i') }}
-                </span>
             </div>
-            @endforeach
-        @endif
-    </div>
+            <div style="text-align:right;">
+                @php
+                    $badgeColor = match(strtolower($item->jenis)) {
+                        'terlambat' => 'badge-warning',
+                        'sakit' => 'badge-info',
+                        'izin' => 'badge-primary',
+                        'alpha' => 'badge-danger',
+                        'dispen', 'dispensasi' => 'badge-success',
+                        default => 'badge-secondary'
+                    };
+                @endphp
+                <span class="badge {{ $badgeColor }}" style="margin-bottom:4px; display:inline-block;">{{ $item->jenis }}</span>
+                <div style="font-size:11px; color:var(--text-muted);">
+                    {{ \Carbon\Carbon::parse($item->waktu)->format('d M Y') }}
+                    @if($item->jenis === 'Terlambat')
+                        {{ \Carbon\Carbon::parse($item->waktu)->format('H:i') }}
+                    @endif
+                </div>
+            </div>
+        </div>
+        @endforeach
+    @endif
 </div>
 
 {{-- ===== DISPENSASI AKTIF ===== --}}
@@ -241,9 +212,9 @@
                     <td class="col-center">{{ \Carbon\Carbon::parse($d->waktu_mulai)->format('d M Y H:i') }}</td>
                     <td class="col-center">{{ \Carbon\Carbon::parse($d->waktu_selesai)->format('d M Y H:i') }}</td>
                     <td class="col-center">
-                        @php $dc = match((int)$d->status_verifikasi_id){ 5=>'badge-success',1=>'badge-warning',default=>'badge-info'}; @endphp
+                        @php $dc = match((int)$d->status_validasi_id){ 5=>'badge-success',1=>'badge-warning',default=>'badge-info'}; @endphp
                         <span class="badge {{ $dc }}">
-                            {{ $d->status_verifikasi_id==5?'Disetujui':($d->status_verifikasi_id==1?'Menunggu':'Proses') }}
+                            {{ $d->status_validasi_id==5?'Disetujui':($d->status_validasi_id==1?'Menunggu':'Proses') }}
                         </span>
                     </td>
                 </tr>

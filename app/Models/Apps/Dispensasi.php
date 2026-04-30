@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Apps\Organisasi;
 use App\Models\Apps\PeriodeAkademik;
-use App\Models\Reference\StatusVerifikasi;
+use App\Models\Reference\StatusValidasi;
 
 class Dispensasi extends Model
 {
@@ -27,9 +27,9 @@ class Dispensasi extends Model
         return $this->belongsTo(PeriodeAkademik::class, 'periode_akademik_id');
     }
 
-    public function statusVerifikasi()
+    public function statusValidasi()
     {
-        return $this->belongsTo(StatusVerifikasi::class, 'status_verifikasi_id');
+        return $this->belongsTo(StatusValidasi::class, 'status_validasi_id');
     }
 
     public function details()

@@ -21,8 +21,32 @@
                     <span style="font-weight:600; font-size:13px; color:var(--text-main);">
                         {{ auth()->user()->nama }}
                     </span>
-                    <span style="font-size:11px; color:var(--text-muted);">
-                        {{ auth()->user()->roles->pluck('nama_role')->join(', ') }}
+                    <span style="font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
+                        <span>{{ auth()->user()->roles->pluck('nama_role')->join(', ') }}</span>
+                        @php
+                            $namaKelasAvatar = null;
+                            $uId = auth()->user()->id;
+                            if (auth()->user()->hasRole('Wali Kelas')) {
+                                $k = \Illuminate\Support\Facades\DB::table('kelas')
+                                    ->join('guru', 'guru.id', '=', 'kelas.wali_kelas_id')
+                                    ->where('guru.user_id', $uId)
+                                    ->where('kelas.status', 1)
+                                    ->select('kelas.nama_kelas')->first();
+                                if($k) $namaKelasAvatar = $k->nama_kelas;
+                            } elseif (auth()->user()->hasRole('Ketua Kelas') || auth()->user()->hasRole('Siswa')) {
+                                $k = \Illuminate\Support\Facades\DB::table('kelas')
+                                    ->join('siswa', 'siswa.id', '=', 'kelas.ketua_kelas_id')
+                                    ->where('siswa.user_id', $uId)
+                                    ->where('kelas.status', 1)
+                                    ->select('kelas.nama_kelas')->first();
+                                if($k) $namaKelasAvatar = $k->nama_kelas;
+                            }
+                        @endphp
+                        @if($namaKelasAvatar)
+                            <span style="background:var(--primary-light); color:var(--primary); padding:2px 6px; border-radius:4px; font-weight:600; font-size:10px;">
+                                {{ $namaKelasAvatar }}
+                            </span>
+                        @endif
                     </span>
                 </div>
                 <i class="ri-arrow-down-s-line" style="color:var(--text-muted); font-size:16px;"></i>

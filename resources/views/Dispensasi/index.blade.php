@@ -95,30 +95,23 @@
                         </td>
                         <td class="col-center">
                             <span class="text-muted-sm">
-                                {{ $d->statusVerifikasi->nama_status ?? 'Menunggu' }}
+                                {{ $d->statusValidasi->nama_status ?? 'Menunggu' }}
                             </span>
                         </td>
-                        <td class="col-center">
-                            @if(auth()->user()->hasRole(['Admin']))
-                                @if($d->status_verifikasi_id !== $statusDisetujuiId && $d->details_count > 0)
-                                    <button type="button" class="btn btn-sm btn-success"
-                                        onclick="showVerifikasiModal({{ $d->id }}, '{{ $d->kegiatan }}')">
-                                        <i class="ri-checkbox-circle-line"></i> Verifikasi
-                                    </button>
-                                @endif
-                                <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-info">
-                                    <i class="ri-eye-line"></i> Detail
-                                </a>
-                                <button type="button" class="btn btn-sm btn-danger"
-                                    onclick="showDeleteModal({{ $d->id }}, '{{ $d->kegiatan }}')">
-                                    <i class="ri-delete-bin-line"></i> Hapus
-                                </button>
+                        <td class="col-center" style="white-space:nowrap;">
+                            @php
+                                $statusId        = (int) $d->status_validasi_id;
+                                $isMenungguPiket = $statusId === (int) $statusMenungguPiketId;
+                                $isOwner         = auth()->user()->hasRole(['Siswa', 'Ketua Kelas'])
+                                                   && (int) $d->user_input === (int) auth()->user()->id;
+                                $isEditable      = in_array($statusId, [(int) $statusMenungguPengisianId, (int) $statusPerluRevisiId], true);
+                            @endphp
 
-                            @elseif(auth()->user()->hasRole(['Petugas Piket']))
-                                @if($d->status_verifikasi_id !== $statusDisetujuiId && $d->details_count > 0)
+                            @if(auth()->user()->hasRole(['Admin', 'Petugas Piket']))
+                                @if($isMenungguPiket && $d->details_count > 0)
                                     <button type="button" class="btn btn-sm btn-success"
-                                        onclick="showVerifikasiModal({{ $d->id }}, '{{ $d->kegiatan }}')">
-                                        <i class="ri-checkbox-circle-line"></i> Verifikasi
+                                        onclick="showVerifikasiModal({{ $d->id }})">
+                                        <i class="ri-checkbox-circle-line"></i> Validasi
                                     </button>
                                 @endif
                                 <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-info">
@@ -129,6 +122,12 @@
                                 <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-info">
                                     <i class="ri-eye-line"></i> Detail
                                 </a>
+                                @if ($isOwner && $isEditable)
+                                    <button type="button" class="btn btn-sm btn-danger"
+                                        onclick="showDeleteModal({{ $d->id }})">
+                                        <i class="ri-delete-bin-line"></i> Hapus
+                                    </button>
+                                @endif
                             @endif
                         </td>
                     </tr>
@@ -138,41 +137,44 @@
     </div>
 </div>
 
-{{-- Modal Hapus (Admin) --}}
-@if(auth()->user()->hasRole(['Admin']))
+{{-- Modal Hapus --}}
 <div class="confirm-overlay" id="deleteModal">
     <div class="confirm-box">
         <div class="confirm-icon">!</div>
-        <h3>Are you sure?</h3>
-        <p>Dispensasi <strong id="deleteLabel"></strong> akan dihapus beserta semua data siswa di dalamnya.</p>
+        <h3>Hapus Dispensasi?</h3>
+        <p>Data yang dihapus tidak dapat dikembalikan.</p>
         <div class="confirm-actions">
-            <form id="delete-form" method="POST" style="display:inline;">
-                @csrf @method('DELETE')
-                <button type="submit" class="btn btn-danger">Yes, delete it!</button>
+            <form id="delete-form" method="POST">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger">Ya, Hapus</button>
             </form>
-            <button onclick="closeDeleteModal()" class="btn btn-secondary">Cancel</button>
+            <button onclick="closeDeleteModal()" class="btn btn-secondary">Batal</button>
         </div>
     </div>
 </div>
-@endif
 
-{{-- Modal Verifikasi (Admin + Petugas Piket) --}}
+{{-- Modal Validasi (Admin + Petugas Piket) --}}
 @if(auth()->user()->hasRole(['Admin', 'Petugas Piket']))
 <div class="confirm-overlay" id="verifikasiModal">
     <div class="confirm-box">
         <div class="confirm-icon" style="border-color:#43a047;color:#43a047;">
             <i class="ri-checkbox-circle-line" style="font-size:26px;"></i>
         </div>
-        <h3>Verifikasi Dispensasi?</h3>
-        <p>Absensi siswa pada dispensasi <strong id="verifikasiLabel"></strong> akan diubah menjadi <strong>Dispen</strong>. Tindakan ini tidak bisa dibatalkan.</p>
+        <h3>Tindakan untuk Dispensasi?</h3>
         <div class="confirm-actions">
             <form id="verifikasi-form" method="POST" style="display:inline;">
                 @csrf @method('PATCH')
                 <button type="submit" class="btn btn-success">
-                    <i class="ri-checkbox-circle-line"></i> Ya, Verifikasi
+                    <i class="ri-checkbox-circle-line"></i> Ya, Validasi
                 </button>
             </form>
-            <button onclick="closeVerifikasiModal()" class="btn btn-secondary">Batal</button>
+            <form id="revisi-form" method="POST" style="display:inline;">
+                @csrf @method('PATCH')
+                <button type="submit" class="btn btn-warning">
+                    <i class="ri-loop-left-line"></i> Ajukan Revisi
+                </button>
+            </form>
         </div>
     </div>
 </div>
@@ -182,8 +184,7 @@
 
 @push('scripts')
 <script>
-function showDeleteModal(id, kegiatan) {
-    document.getElementById('deleteLabel').textContent = '"' + kegiatan + '"';
+function showDeleteModal(id) {
     document.getElementById('delete-form').action = "{{ route('Dispensasi.destroy', '') }}/" + id;
     document.getElementById('deleteModal').classList.add('show');
 }
@@ -191,9 +192,9 @@ function closeDeleteModal() {
     document.getElementById('deleteModal').classList.remove('show');
 }
 
-function showVerifikasiModal(id, kegiatan) {
-    document.getElementById('verifikasiLabel').textContent = '"' + kegiatan + '"';
+function showVerifikasiModal(id) {
     document.getElementById('verifikasi-form').action = '/dispensasi/' + id + '/verifikasi';
+    document.getElementById('revisi-form').action     = '/dispensasi/' + id + '/revisi';
     document.getElementById('verifikasiModal').classList.add('show');
 }
 function closeVerifikasiModal() {

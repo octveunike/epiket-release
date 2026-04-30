@@ -9,9 +9,16 @@
         </div>
         <h2>Detail Dispensasi</h2>
     </div>
-    <a href="{{ route('Dispensasi.index') }}" class="btn btn-secondary btn-sm">
-        <i class="ri-arrow-left-line"></i> Kembali
-    </a>
+    <div style="display:flex; gap:8px;">
+        @if ($canEditDetail)
+            <a href="{{ route('Dispensasi.edit', $dispensasi->id) }}" class="btn btn-primary">
+                <i class="ri-edit-line"></i> Edit Info Dispensasi
+            </a>
+        @endif
+        <a href="{{ route('Dispensasi.index') }}" class="btn btn-secondary btn-sm">
+            <i class="ri-arrow-left-line"></i> Kembali
+        </a>
+    </div>
 </div>
 
 @if (session('success'))
@@ -39,8 +46,8 @@
         <div>
             <div class="ab-info-label">Status</div>
             <div>
-                @php $status = $dispensasi->statusVerifikasi->nama_status ?? 'Menunggu'; @endphp
-                <span class="badge {{ $dispensasi->status_verifikasi_id === $statusDisetujuiId ? 'badge-success' : 'badge-warning' }}">
+                @php $status = $dispensasi->statusValidasi->nama_status ?? 'Menunggu'; @endphp
+                <span class="badge {{ $dispensasi->status_validasi_id === $statusDisetujuiId ? 'badge-success' : 'badge-warning' }}">
                     {{ $status }}
                 </span>
             </div>
@@ -72,27 +79,30 @@
         </div>
     </div>
 
-    {{-- Tombol Verifikasi — hanya tampil kalau belum disetujui dan sudah ada siswa --}}
+    {{-- Tombol Ajukan — tampil kalau status Menunggu Pengisian / Perlu Revisi dan sudah ada siswa --}}
     @if (
-        auth()->user()->hasRole(['Admin','Petugas Piket']) &&
-        $dispensasi->status_verifikasi_id !== $statusDisetujuiId &&
+        $canEditDetail &&
+        in_array((int) $dispensasi->status_validasi_id, [(int) $statusMenungguPengisianId, (int) $statusPerluRevisiId], true) &&
         $dispensasi->details->isNotEmpty()
     )
         <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
-            <button type="button" class="btn btn-success" onclick="showVerifikasiModal()">
-                <i class="ri-checkbox-circle-line"></i> Verifikasi & Update Absensi
+            <button type="button" class="btn btn-primary" onclick="showAjukanModal()">
+                <i class="ri-send-plane-line"></i> Ajukan Dispensasi
             </button>
             <small class="text-muted-sm" style="margin-left:10px;">
-                Akan mengubah status absensi {{ $dispensasi->details->count() }} siswa menjadi <strong>Dispen</strong>
-                pada tanggal {{ \Carbon\Carbon::parse($dispensasi->waktu_mulai)->format('d/m/Y') }}
-                s/d {{ \Carbon\Carbon::parse($dispensasi->waktu_selesai)->format('d/m/Y') }}.
+                @if (auth()->user()->hasRole(['Admin', 'Petugas Piket']))
+                    Setelah diajukan, absensi siswa akan diperbarui sesuai rentang dispensasi.
+                @else
+                    Setelah diajukan, status berubah menjadi <strong>Menunggu Piket</strong> dan siswa tidak dapat ditambah/dihapus.
+                @endif
             </small>
         </div>
     @endif
+
 </div>
 
-{{-- Form Tambah Siswa — sembunyikan kalau sudah diverifikasi --}}
-@if ($canEditDetail && $dispensasi->status_verifikasi_id !== $statusDisetujuiId)
+{{-- Form Tambah Siswa — visibility ditentukan oleh $canEditDetail di controller --}}
+@if ($canEditDetail)
     <div class="card">
         <div class="card-title"><i class="ri-user-add-line"></i> Tambah Siswa Dispensasi</div>
         <form method="POST" action="{{ route('Dispensasi.storeDetail', $dispensasi->id) }}">
@@ -149,7 +159,7 @@
                         <th class="col-no">No</th>
                         <th>Nama Siswa</th>
                         <th>Kelas</th>
-                        @if ($canEditDetail && $dispensasi->status_verifikasi_id !== $statusDisetujuiId)
+                        @if ($canEditDetail)
                             <th class="col-center">Aksi</th>
                         @endif
                     </tr>
@@ -160,7 +170,7 @@
                             <td class="col-no">{{ $loop->iteration }}</td>
                             <td><strong>{{ $detail->siswa->nama_siswa ?? '—' }}</strong></td>
                             <td>{{ $detail->siswa->kelas->nama_kelas ?? '—' }}</td>
-                            @if ($canEditDetail && $dispensasi->status_verifikasi_id !== $statusDisetujuiId)
+                            @if ($canEditDetail)
                                 <td class="col-center">
                                     <button type="button" class="btn btn-sm btn-danger"
                                         onclick="showDeleteModal({{ $detail->id }})">
@@ -176,26 +186,30 @@
     </div>
 @endif
 
-{{-- Modal Verifikasi --}}
-<div class="confirm-overlay" id="verifikasiModal">
+{{-- Modal Ajukan --}}
+<div class="confirm-overlay" id="ajukanModal">
     <div class="confirm-box">
-        <div class="confirm-icon" style="border-color:#43a047;color:#43a047;">
-            <i class="ri-checkbox-circle-line" style="font-size:26px;"></i>
+        <div class="confirm-icon" style="border-color:#0ea5e9;color:#0ea5e9;">
+            <i class="ri-send-plane-line" style="font-size:26px;"></i>
         </div>
-        <h3>Verifikasi Dispensasi?</h3>
+        <h3>Ajukan Dispensasi?</h3>
         <p>
-            Absensi <strong>{{ $dispensasi->details->count() }} siswa</strong> akan diubah menjadi
-            <strong>Dispen</strong> pada semua tanggal absensi yang ada di rentang waktu ini.
-            Tindakan ini tidak bisa dibatalkan.
+            @if (auth()->user()->hasRole(['Admin', 'Petugas Piket']))
+                Absensi <strong>{{ $dispensasi->details->count() }} siswa</strong> akan diperbarui menjadi
+                <strong>Dispen</strong> pada rentang tanggal dispensasi ini. Pastikan semua siswa sudah terdaftar.
+            @else
+                Absensi <strong>{{ $dispensasi->details->count() }} siswa</strong> akan diperbarui menjadi
+                <strong>Dispen</strong> ketika disetujui pada rentang tanggal dispensasi ini. Pastikan semua siswa sudah terdaftar.
+            @endif
         </p>
         <div class="confirm-actions">
-            <form method="POST" action="{{ route('Dispensasi.verifikasi', $dispensasi->id) }}" style="display:inline;">
+            <form method="POST" action="{{ route('Dispensasi.ajukan', $dispensasi->id) }}" style="display:inline;">
                 @csrf @method('PATCH')
-                <button type="submit" class="btn btn-success">
-                    <i class="ri-checkbox-circle-line"></i> Ya, Verifikasi
+                <button type="submit" class="btn btn-primary">
+                    <i class="ri-send-plane-line"></i> Ya, Ajukan
                 </button>
             </form>
-            <button onclick="closeVerifikasiModal()" class="btn btn-secondary">Batal</button>
+            <button onclick="closeAjukanModal()" class="btn btn-secondary">Batal</button>
         </div>
     </div>
 </div>
@@ -236,11 +250,11 @@ document.getElementById('kelas-select')?.addEventListener('change', function () 
     }
 });
 
-function showVerifikasiModal() {
-    document.getElementById('verifikasiModal').classList.add('show');
+function showAjukanModal() {
+    document.getElementById('ajukanModal').classList.add('show');
 }
-function closeVerifikasiModal() {
-    document.getElementById('verifikasiModal').classList.remove('show');
+function closeAjukanModal() {
+    document.getElementById('ajukanModal').classList.remove('show');
 }
 
 function showDeleteModal(id) {

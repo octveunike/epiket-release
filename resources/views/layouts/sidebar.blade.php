@@ -7,6 +7,9 @@
             <div class="logo-icon"><i class="ri-shield-star-fill"></i></div>
             E-PIKET
         </a>
+        <a href="#" class="sidebar-close-btn" onclick="closeSidebar()" style="color:rgba(255,255,255,.6); font-size:22px; margin-left:auto; display:none;">
+            <i class="ri-close-line"></i>
+        </a>
     </div>
 
     <div class="sidebar-body">
