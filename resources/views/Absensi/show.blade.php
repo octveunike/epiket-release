@@ -104,7 +104,7 @@
 
 {{-- Tabel Detail Siswa --}}
 <div class="card">
-    <div class="card-title"><i class="ri-list-check-2"></i> Detail Kehadiran Siswa</div>
+    <div class="card-title"><i class="ri-list-check-2"></i> Detail ketidakhadiran Siswa</div>
     <div class="table-responsive">
         <table>
             <thead>
@@ -196,7 +196,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="td-empty">Belum ada data detail kehadiran.</td>
+                        <td colspan="6" class="td-empty">Belum ada data detail ketidakhadiran.</td>
                     </tr>
                 @endforelse
             </tbody>

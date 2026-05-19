@@ -106,9 +106,13 @@ class GuruController extends Controller
             return redirect()->back()->with('error', $e->getMessage());
         }
 
-        // Redirect balik ke halaman Kelas edit kalau datang dari sana
+        // Redirect balik ke halaman Kelas kalau datang dari sana
         if ($request->return_to === 'kelas_edit' && $request->kelas_id) {
             return redirect()->route('Kelas.edit', $request->kelas_id)
+                ->with('success', 'Data Guru berhasil diupdate');
+        }
+        if ($request->return_to === 'kelas_create') {
+            return redirect()->route('Kelas.create')
                 ->with('success', 'Data Guru berhasil diupdate');
         }
 
@@ -139,22 +143,34 @@ class GuruController extends Controller
             'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:2048'],
         ]);
 
+        $importer = new GuruImport();
+
         DB::beginTransaction();
 
         try {
-            $sebelum = Guru::where('status', '1')->count();
-
-            Excel::import(new GuruImport, $request->file('file'));
-
-            $sesudah = Guru::where('status', '1')->count();
-            $jumlah  = $sesudah - $sebelum;
-
+            Excel::import($importer, $request->file('file'));
             DB::commit();
         } catch (Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal import: ' . $e->getMessage());
         }
 
-        return redirect()->route('Guru.index')->with('success', 'Import berhasil! ' . $jumlah . ' data guru berhasil ditambahkan.');
+        $jumlah = $importer->imported;
+
+        if ($jumlah === 0) {
+            $detail = !empty($importer->errors)
+                ? ' Detail: ' . implode(' | ', array_slice($importer->errors, 0, 5))
+                : ' Pastikan file mengikuti format template (header baris pertama, data mulai baris 2).';
+            return redirect()->route('Guru.index')
+                ->with('error', 'Tidak ada data guru yang berhasil ditambahkan.' . $detail);
+        }
+
+        $msg = "Import berhasil! {$jumlah} data guru berhasil ditambahkan.";
+        if (!empty($importer->errors)) {
+            $msg .= ' (' . count($importer->errors) . ' baris dilewati: '
+                  . implode(' | ', array_slice($importer->errors, 0, 3)) . ')';
+        }
+
+        return redirect()->route('Guru.index')->with('success', $msg);
     }
 }

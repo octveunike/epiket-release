@@ -46,6 +46,16 @@
                 @endforeach
             </select>
         </div>
+        <div class="form-group" style="margin-bottom:0;min-width:180px;">
+            <label class="form-label">Periode Akademik</label>
+            <select name="periode_akademik_id" class="form-control">
+                @foreach ($periodeList as $p)
+                    <option value="{{ $p->id }}" {{ $periodeId == $p->id ? 'selected' : '' }}>
+                        {{ $p->nama_periode }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
         <button type="submit" class="btn btn-primary" style="margin-bottom:0;">
             <i class="ri-filter-line"></i> Filter
         </button>
@@ -64,9 +74,9 @@
                     <th>Kegiatan</th>
                     <th class="col-center">Waktu Mulai</th>
                     <th class="col-center">Waktu Selesai</th>
-                    <th class="col-center">Siswa</th>
                     <th class="col-center">Status</th>
                     <th class="col-center">Aksi</th>
+                    <th>Update Terakhir</th>
                 </tr>
             </thead>
             <tbody>
@@ -75,36 +85,26 @@
                         <td class="col-no">{{ $loop->iteration }}</td>
                         <td>
                             <strong>{{ $d->kegiatan }}</strong>
-                            @if ($d->lampiran_dispensasi)
-                                <div>
-                                    <a href="{{ asset('storage/' . $d->lampiran_dispensasi) }}"
-                                        target="_blank" class="link-lampiran">
-                                        <i class="ri-attachment-2"></i> Lampiran
-                                    </a>
-                                </div>
-                            @endif
-                        </td>
-                        <td class="col-center text-muted-sm">
-                            {{ \Carbon\Carbon::parse($d->waktu_mulai)->translatedFormat('d M Y, H:i') }}
-                        </td>
-                        <td class="col-center text-muted-sm">
-                            {{ \Carbon\Carbon::parse($d->waktu_selesai)->translatedFormat('d M Y, H:i') }}
                         </td>
                         <td class="col-center">
-                            <span class="ab-ipill ab-ipill-t">{{ $d->details_count }} siswa</span>
+                            {{ \Carbon\Carbon::parse($d->waktu_mulai)->locale('id')->translatedFormat('d M Y, H:i') }}
                         </td>
                         <td class="col-center">
-                            <span class="text-muted-sm">
+                            {{ \Carbon\Carbon::parse($d->waktu_selesai)->locale('id')->translatedFormat('d M Y, H:i') }}
+                        </td>
+                        <td class="col-center">
+                            <span style="font-size:13px;color:var(--text-main);">
                                 {{ $d->statusValidasi->nama_status ?? 'Menunggu' }}
                             </span>
                         </td>
                         <td class="col-center" style="white-space:nowrap;">
                             @php
-                                $statusId        = (int) $d->status_validasi_id;
-                                $isMenungguPiket = $statusId === (int) $statusMenungguPiketId;
-                                $isOwner         = auth()->user()->hasRole(['Siswa', 'Ketua Kelas'])
-                                                   && (int) $d->user_input === (int) auth()->user()->id;
-                                $isEditable      = in_array($statusId, [(int) $statusMenungguPengisianId, (int) $statusPerluRevisiId], true);
+                                $statusId            = (int) $d->status_validasi_id;
+                                $isMenungguPiket     = $statusId === (int) $statusMenungguPiketId;
+                                $isMenungguPengisian = $statusId === (int) $statusMenungguPengisianId;
+                                $isOwner             = auth()->user()->hasRole(['Siswa', 'Ketua Kelas'])
+                                                       && (int) $d->user_input === (int) auth()->user()->id;
+                                $isEditable          = in_array($statusId, [(int) $statusMenungguPengisianId, (int) $statusPerluRevisiId], true);
                             @endphp
 
                             @if(auth()->user()->hasRole(['Admin', 'Petugas Piket']))
@@ -114,14 +114,26 @@
                                         <i class="ri-checkbox-circle-line"></i> Validasi
                                     </button>
                                 @endif
-                                <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-info">
-                                    <i class="ri-eye-line"></i> Detail
-                                </a>
+                                @if($isMenungguPengisian)
+                                    <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-primary">
+                                        <i class="ri-edit-line"></i> Lengkapi Data
+                                    </a>
+                                @else
+                                    <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-info">
+                                        <i class="ri-eye-line"></i> Detail Dispen
+                                    </a>
+                                @endif
 
                             @elseif(auth()->user()->hasRole(['Siswa', 'Ketua Kelas']))
-                                <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-info">
-                                    <i class="ri-eye-line"></i> Detail
-                                </a>
+                                @if($isMenungguPengisian)
+                                    <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-primary">
+                                        <i class="ri-edit-line"></i> Lengkapi Data
+                                    </a>
+                                @else
+                                    <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-info">
+                                        <i class="ri-eye-line"></i> Detail Dispen
+                                    </a>
+                                @endif
                                 @if ($isOwner && $isEditable)
                                     <button type="button" class="btn btn-sm btn-danger"
                                         onclick="showDeleteModal({{ $d->id }})">
@@ -130,6 +142,56 @@
                                 @endif
                             @endif
                         </td>
+                        <td>{{ $d->userUpdate->nama ?? $d->userInput->nama ?? 'Auto' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{{-- Tabel History Dispensasi (Disetujui) --}}
+<h3 style="margin-top:24px;margin-bottom:12px;font-size:16px;color:var(--text-main);">
+    <i class="ri-history-line"></i> History Dispensasi (Disetujui)
+</h3>
+<div class="card">
+    <div class="table-responsive">
+        <table id="tableDispensasiHistory" class="dt-table">
+            <thead>
+                <tr>
+                    <th class="col-no">No</th>
+                    <th>Kegiatan</th>
+                    <th class="col-center">Waktu Mulai</th>
+                    <th class="col-center">Waktu Selesai</th>
+                    <th class="col-center">Status</th>
+                    <th class="col-center">Aksi</th>
+                    <th>Update Terakhir</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($historyList as $d)
+                    <tr>
+                        <td class="col-no">{{ $loop->iteration }}</td>
+                        <td>
+                            <strong>{{ $d->kegiatan }}</strong>
+                        </td>
+                        <td class="col-center">
+                            {{ \Carbon\Carbon::parse($d->waktu_mulai)->locale('id')->translatedFormat('d M Y, H:i') }}
+                        </td>
+                        <td class="col-center">
+                            {{ \Carbon\Carbon::parse($d->waktu_selesai)->locale('id')->translatedFormat('d M Y, H:i') }}
+                        </td>
+                        <td class="col-center">
+                            <span style="font-size:13px;color:var(--text-main);">
+                                {{ $d->statusValidasi->nama_status ?? '—' }}
+                            </span>
+                        </td>
+                        <td class="col-center" style="white-space:nowrap;">
+                            <a href="{{ route('Dispensasi.show', $d->id) }}" class="btn btn-sm btn-secondary">
+                                <i class="ri-eye-line"></i> Detail Dispen
+                            </a>
+                        </td>
+                        <td>{{ $d->userUpdate->nama ?? $d->userInput->nama ?? 'Auto' }}</td>
                     </tr>
                 @endforeach
             </tbody>

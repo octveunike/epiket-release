@@ -8,6 +8,7 @@ use App\Models\Apps\Kelas;
 use App\Models\Apps\Absensi;
 use App\Models\Apps\AbsensiDetail;
 use App\Models\Apps\Keterlambatan;
+use App\Models\Apps\PeriodeAkademik;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -20,29 +21,56 @@ class KeterlambatanController extends Controller
         $dari   = $request->dari ?? now()->subDays(7)->toDateString();
         $sampai = $request->sampai ?? now()->toDateString();
 
-        $query = Keterlambatan::with(['siswa', 'absensi.kelas', 'periodeAkademik'])
+        $ketuaKelasId = null;
+        if (auth()->user()->hasRole('Ketua Kelas')) {
+            $ketuaKelasId = auth()->user()->ketuaKelasId();
+            if (!$ketuaKelasId) {
+                abort(403, 'Akun Anda belum tertaut ke data siswa/kelas. Hubungi Admin.');
+            }
+        }
+
+        // Default Periode Akademik = periode aktif (status = 1)
+        $periodeAktif = PeriodeAkademik::where('status', 1)->first();
+        $periodeId    = $request->filled('periode_akademik_id')
+                      ? (int) $request->periode_akademik_id
+                      : ($periodeAktif?->id);
+
+        $query = Keterlambatan::with(['siswa', 'absensi.kelas', 'periodeAkademik', 'userUpdate', 'userInput'])
             ->where('status', 1)
             ->orderByDesc('waktu_masuk');
 
         // Filter range tanggal (berdasarkan tanggal absensi)
         $query->whereHas('absensi', function ($q) use ($dari, $sampai) {
             $q->whereDate('tanggal', '>=', $dari)
-            ->whereDate('tanggal', '<=', $sampai);
+              ->whereDate('tanggal', '<=', $sampai);
         });
 
-        // Filter kelas
-        if ($request->filled('kelas_id')) {
-            $query->whereHas('absensi', function ($q) use ($request) {
-                $q->where('kelas_id', $request->kelas_id);
+        // Filter kelas (Ketua Kelas locked to own kelas)
+        $kelasId = $ketuaKelasId ?? ($request->filled('kelas_id') ? (int) $request->kelas_id : null);
+        if ($kelasId) {
+            $query->whereHas('absensi', function ($q) use ($kelasId) {
+                $q->where('kelas_id', $kelasId);
             });
         }
 
+        // Filter periode akademik
+        if ($periodeId) {
+            $query->where('periode_akademik_id', $periodeId);
+        }
+
         $keterlambatan = $query->paginate(25);
-        $kelas         = Kelas::where('status', 1)->orderBy('nama_kelas')->get();
+        $kelas         = $ketuaKelasId
+                       ? Kelas::where('status', 1)->where('id', $ketuaKelasId)->get()
+                       : Kelas::where('status', 1)->orderBy('nama_kelas')->get();
+        $scopeKelas    = $ketuaKelasId ? Kelas::find($ketuaKelasId) : null;
+        $periodeList   = PeriodeAkademik::where('status', 1)->orderByDesc('id')->get();
 
         return view('Keterlambatan.index', compact(
             'keterlambatan',
             'kelas',
+            'scopeKelas',
+            'periodeList',
+            'periodeId',
             'dari',
             'sampai'
         ));

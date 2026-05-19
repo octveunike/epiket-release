@@ -53,4 +53,9 @@ class Absensi extends Model
     {
         return $this->belongsTo(User::class, 'user_input', 'id');
     }
+
+    public function userUpdate()
+    {
+        return $this->belongsTo(User::class, 'user_update', 'id');
+    }
 }

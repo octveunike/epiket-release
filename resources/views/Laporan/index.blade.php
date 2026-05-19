@@ -88,7 +88,7 @@
 {{-- Tabel hasil --}}
 <div class="card">
     <div class="table-responsive">
-        <table>
+        <table id="tableLaporan" class="dt-table">
             <thead>
                 <tr>
                     <th class="col-no">No</th>
@@ -98,47 +98,40 @@
                     <th>Kelas</th>
                     <th class="col-center">Kategori</th>
                     <th>Deskripsi</th>
-                    <th>Keterangan</th>
-                    <th>Penginput</th>
+                    <th>Update Terakhir</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($rows as $i => $row)
                     <tr>
                         <td class="col-no">{{ $i + 1 }}</td>
-                        <td class="text-muted-sm" >{{ $row['hari'] }}</td>
-                        <td class="text-muted-sm">{{ $row['tanggal'] }}</td>
-                        <td class="text-muted-sm">{{ $row['nama_siswa'] }}</td>
-                        <td class="text-muted-sm">{{ $row['kelas'] }}</td>
+                        <td  >{{ $row['hari'] }}</td>
+                        <td >{{ $row['tanggal'] }}</td>
+                        <td >{{ $row['nama_siswa'] }}</td>
+                        <td >{{ $row['kelas'] }}</td>
                         <td class="col-center">
                             @php
                                 $label = $row['kategori'];
-                                $style = 'background:#fee2e2;color:#991b1b;'; // default (Absensi Alpha-ish)
-                                if ($row['kategori'] === 'Keterlambatan') {
+                                $kat   = strtolower($label);
+                                $style = 'background:#e5e7eb;color:#374151;';
+                                if ($kat === 'keterlambatan') {
+                                    $style = 'background:#ffedd5;color:#9a3412;';
+                                } elseif ($kat === 'izin') {
                                     $style = 'background:#fef3c7;color:#92400e;';
-                                } elseif ($row['kategori'] === 'Dispensasi') {
+                                } elseif ($kat === 'dispensasi') {
                                     $style = 'background:#e0f2fe;color:#075985;';
-                                } elseif ($row['kategori'] === 'Absensi') {
-                                    $sub   = $row['deskripsi'] ?? '';
-                                    $label = $sub ?: '—';
-                                    if (stripos($sub, 'izin') !== false) {
-                                        $style = 'background:#fef3c7;color:#92400e;';
-                                    } elseif (stripos($sub, 'sakit') !== false) {
-                                        $style = 'background:#dbeafe;color:#1e40af;';
-                                    } elseif (stripos($sub, 'alpha') !== false || stripos($sub, 'alfa') !== false) {
-                                        $style = 'background:#fee2e2;color:#991b1b;';
-                                    } else {
-                                        $style = 'background:#e5e7eb;color:#374151;';
-                                    }
+                                } elseif ($kat === 'sakit') {
+                                    $style = 'background:#dbeafe;color:#1e40af;';
+                                } elseif ($kat === 'alpha' || $kat === 'alfa') {
+                                    $style = 'background:#fee2e2;color:#991b1b;';
                                 }
                             @endphp
                             <span style="font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600;{{ $style }}">
                                 {{ $label }}
                             </span>
                         </td>
-                        <td class="text-muted-sm">{{ $row['deskripsi'] }}</td>
-                        <td class="text-muted-sm">{{ $row['keterangan'] }}</td>
-                        <td class="text-muted-sm">{{ $row['penginput'] }}</td>
+                        <td >{{ $row['deskripsi'] }}</td>
+                        <td >{{ $row['penginput'] }}</td>
                     </tr>
                 @empty
                 @endforelse

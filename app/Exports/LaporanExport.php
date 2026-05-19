@@ -32,7 +32,7 @@ class LaporanExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
 
     public function headings(): array
     {
-        return ['No', 'Hari', 'Tanggal', 'Nama Siswa', 'Kelas', 'Kategori', 'Deskripsi', 'Keterangan', 'Penginput'];
+        return ['No', 'Hari', 'Tanggal', 'Nama Siswa', 'Kelas', 'Kategori', 'Deskripsi', 'Update Terakhir'];
     }
 
     public function array(): array
@@ -46,7 +46,6 @@ class LaporanExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
                 $row['kelas'],
                 $row['kategori'],
                 $row['deskripsi'],
-                $row['keterangan'],
                 $row['penginput'],
             ];
         })->toArray();
@@ -62,45 +61,35 @@ class LaporanExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
             'E' => 12,
             'F' => 16,
             'G' => 30,
-            'H' => 30,
-            'I' => 22,
+            'H' => 22,
         ];
     }
 
     public function styles(Worksheet $sheet): array
     {
-        $lastRow = count($this->rows) + 2; // +1 header info row, +1 heading row
-
-        return [
-            // Header row styling
-            2 => [
-                'font'      => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'size' => 11],
-                'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF2D6A4F']],
-                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-            ],
-            // Info row (row 1)
-            1 => [
-                'font'      => ['bold' => true, 'size' => 11],
-                'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
-            ],
-        ];
+        // All styling is applied in the AfterSheet event so it runs
+        // against stable post-insert row positions.
+        return [];
     }
 
     public function registerEvents(): array
     {
         return [
             AfterSheet::class => function (AfterSheet $event) {
-                $sheet   = $event->sheet->getDelegate();
-                $lastRow = count($this->rows) + 2;
+                $sheet = $event->sheet->getDelegate();
 
                 // ── Info baris pertama ────────────────────────
-                $dari    = $this->filters['dari']    ?? '-';
-                $sampai  = $this->filters['sampai']  ?? '-';
-                $kategori = $this->filters['kategori'] ? ucfirst($this->filters['kategori']) : 'Semua';
+                $dari   = $this->filters['dari']   ?? '-';
+                $sampai = $this->filters['sampai'] ?? '-';
+
+                $headerText = "Laporan Kehadiran Siswa | Periode: {$dari} s/d {$sampai}";
+                if (!empty($this->filters['kategori'])) {
+                    $headerText .= ' | Kategori: ' . ucfirst($this->filters['kategori']);
+                }
 
                 $sheet->insertNewRowBefore(1, 1);
-                $sheet->mergeCells('A1:I1');
-                $sheet->setCellValue('A1', "Laporan Kehadiran Siswa | Periode: {$dari} s/d {$sampai} | Kategori: {$kategori}");
+                $sheet->mergeCells('A1:H1');
+                $sheet->setCellValue('A1', $headerText);
                 $sheet->getStyle('A1')->applyFromArray([
                     'font'      => ['bold' => true, 'size' => 12, 'color' => ['argb' => 'FF1B4332']],
                     'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFD8F3DC']],
@@ -109,6 +98,11 @@ class LaporanExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
                 $sheet->getRowDimension(1)->setRowHeight(24);
 
                 // ── Heading row (baris 2) ─────────────────────
+                $sheet->getStyle('A2:H2')->applyFromArray([
+                    'font'      => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'size' => 11],
+                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF2D6A4F']],
+                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                ]);
                 $sheet->getRowDimension(2)->setRowHeight(20);
 
                 // ── Data rows: border + zebra stripe ─────────
@@ -121,25 +115,25 @@ class LaporanExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
                     ],
                 ];
 
-                for ($r = 3; $r <= $lastRow + 1; $r++) {
-                    // Zebra
+                $lastRow = count($this->rows) + 2;
+                for ($r = 3; $r <= $lastRow; $r++) {
                     if ($r % 2 === 0) {
-                        $sheet->getStyle("A{$r}:I{$r}")->applyFromArray([
+                        $sheet->getStyle("A{$r}:H{$r}")->applyFromArray([
                             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFF9FAFB']],
                         ]);
                     }
-                    $sheet->getStyle("A{$r}:I{$r}")->applyFromArray($borderStyle);
+                    $sheet->getStyle("A{$r}:H{$r}")->applyFromArray($borderStyle);
                     $sheet->getStyle("A{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 }
 
                 // Heading border juga
-                $sheet->getStyle('A2:I2')->applyFromArray($borderStyle);
+                $sheet->getStyle('A2:H2')->applyFromArray($borderStyle);
 
                 // Freeze header
                 $sheet->freezePane('A3');
 
                 // Auto filter
-                $sheet->setAutoFilter("A2:I2");
+                $sheet->setAutoFilter("A2:H2");
             },
         ];
     }

@@ -125,22 +125,34 @@ class StaffController extends Controller
             'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:2048'],
         ]);
 
+        $importer = new StaffImport();
+
         DB::beginTransaction();
 
         try {
-            $sebelum = Staff::where('status', '1')->count();
-
-            Excel::import(new StaffImport, $request->file('file'));
-
-            $sesudah = Staff::where('status', '1')->count();
-            $jumlah  = $sesudah - $sebelum;
-
+            Excel::import($importer, $request->file('file'));
             DB::commit();
         } catch (Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal import: ' . $e->getMessage());
         }
 
-        return redirect()->route('Staff.index')->with('success', 'Import berhasil! ' . $jumlah . ' data staff berhasil ditambahkan.');
+        $jumlah = $importer->imported;
+
+        if ($jumlah === 0) {
+            $detail = !empty($importer->errors)
+                ? ' Detail: ' . implode(' | ', array_slice($importer->errors, 0, 5))
+                : ' Pastikan file mengikuti format template (header baris pertama, data mulai baris 2).';
+            return redirect()->route('Staff.index')
+                ->with('error', 'Tidak ada data staff yang berhasil ditambahkan.' . $detail);
+        }
+
+        $msg = "Import berhasil! {$jumlah} data staff berhasil ditambahkan.";
+        if (!empty($importer->errors)) {
+            $msg .= ' (' . count($importer->errors) . ' baris dilewati: '
+                  . implode(' | ', array_slice($importer->errors, 0, 3)) . ')';
+        }
+
+        return redirect()->route('Staff.index')->with('success', $msg);
     }
 }

@@ -38,9 +38,17 @@ class DispensasiController extends Controller
                                         ->where('status', 1)
                                         ->value('id');
 
-        $query = Dispensasi::with(['organisasi', 'statusValidasi'])
+        // Default Periode Akademik = periode aktif (status = 1)
+        $periodeAktif = PeriodeAkademik::where('status', 1)->first();
+        $periodeId    = $request->filled('periode_akademik_id')
+                      ? (int) $request->periode_akademik_id
+                      : ($periodeAktif?->id);
+
+        // Tabel atas: semua dispensasi yang belum Disetujui
+        $query = Dispensasi::with(['organisasi', 'statusValidasi', 'userUpdate', 'userInput'])
             ->withCount('details')
             ->where('status', 1)
+            ->where('status_validasi_id', '!=', $statusDisetujuiId)
             // Menunggu Piket selalu di paling atas, lalu sort by tanggal terbaru
             ->orderByRaw('status_validasi_id = ? DESC', [$statusMenungguPiketId])
             ->orderByDesc('waktu_mulai')
@@ -49,17 +57,42 @@ class DispensasiController extends Controller
             ->whereDate('waktu_mulai', '<=', $sampai)
             ->whereDate('waktu_selesai', '>=', $dari);
 
-        // Filter organisasi (opsional)
         if ($request->filled('organisasi_id')) {
             $query->where('organisasi_id', $request->organisasi_id);
         }
+        if ($periodeId) {
+            $query->where('periode_akademik_id', $periodeId);
+        }
 
         $dispensasi = $query->get();
-        $organisasi = Organisasi::where('status', 1)->orderBy('nama_organisasi')->get();
+
+        // Tabel bawah: history (Disetujui)
+        $historyQuery = Dispensasi::with(['organisasi', 'statusValidasi', 'userUpdate', 'userInput'])
+            ->withCount('details')
+            ->where('status', 1)
+            ->where('status_validasi_id', $statusDisetujuiId)
+            ->orderByDesc('waktu_mulai')
+            ->whereDate('waktu_mulai', '<=', $sampai)
+            ->whereDate('waktu_selesai', '>=', $dari);
+
+        if ($request->filled('organisasi_id')) {
+            $historyQuery->where('organisasi_id', $request->organisasi_id);
+        }
+        if ($periodeId) {
+            $historyQuery->where('periode_akademik_id', $periodeId);
+        }
+
+        $historyList = $historyQuery->get();
+
+        $organisasi  = Organisasi::where('status', 1)->orderBy('nama_organisasi')->get();
+        $periodeList = PeriodeAkademik::where('status', 1)->orderByDesc('id')->get();
 
         return view('Dispensasi.index', compact(
             'dispensasi',
+            'historyList',
             'organisasi',
+            'periodeList',
+            'periodeId',
             'statusDisetujuiId',
             'statusMenungguPengisianId',
             'statusMenungguPiketId',

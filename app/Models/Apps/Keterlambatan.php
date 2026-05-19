@@ -7,6 +7,7 @@ use App\Models\Apps\Absensi;
 use App\Models\Apps\AbsensiDetail;
 use App\Models\Admin\Siswa;
 use App\Models\Apps\PeriodeAkademik;
+use App\Models\User;
 
 class Keterlambatan extends Model
 {
@@ -38,5 +39,15 @@ class Keterlambatan extends Model
     public function periodeAkademik()
     {
         return $this->belongsTo(PeriodeAkademik::class, 'periode_akademik_id');
+    }
+
+    public function userInput()
+    {
+        return $this->belongsTo(User::class, 'user_input', 'id');
+    }
+
+    public function userUpdate()
+    {
+        return $this->belongsTo(User::class, 'user_update', 'id');
     }
 }

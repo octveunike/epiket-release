@@ -227,23 +227,35 @@ class OrganisasiController extends Controller
             'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:2048'],
         ]);
 
+        $importer = new OrganisasiImport();
+
         DB::beginTransaction();
 
         try {
-            $sebelum = Organisasi::where('status', 1)->count();
-
-            Excel::import(new OrganisasiImport, $request->file('file'));
-
-            $sesudah = Organisasi::where('status', 1)->count();
-            $jumlah  = $sesudah - $sebelum;
-
+            Excel::import($importer, $request->file('file'));
             DB::commit();
         } catch (Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal import: ' . $e->getMessage());
         }
 
-        return redirect()->route('Organisasi.index')->with('success', 'Import berhasil! ' . $jumlah . ' data organisasi berhasil ditambahkan.');
+        $jumlah = $importer->imported;
+
+        if ($jumlah === 0) {
+            $detail = !empty($importer->errors)
+                ? ' Detail: ' . implode(' | ', array_slice($importer->errors, 0, 5))
+                : ' Pastikan file mengikuti format template (header baris pertama, data mulai baris 2).';
+            return redirect()->route('Organisasi.index')
+                ->with('error', 'Tidak ada data organisasi yang berhasil ditambahkan.' . $detail);
+        }
+
+        $msg = "Import berhasil! {$jumlah} data organisasi berhasil ditambahkan.";
+        if (!empty($importer->errors)) {
+            $msg .= ' (' . count($importer->errors) . ' baris dengan catatan: '
+                  . implode(' | ', array_slice($importer->errors, 0, 3)) . ')';
+        }
+
+        return redirect()->route('Organisasi.index')->with('success', $msg);
     }
 
     /**
@@ -258,23 +270,34 @@ class OrganisasiController extends Controller
 
         Organisasi::where('status', 1)->findOrFail($id);
 
+        $importer = new AnggotaOrganisasiImport((int) $id, $this->currentUser());
+
         DB::beginTransaction();
 
         try {
-            $sebelum = SiswaOrganisasi::where('organisasi_id', $id)->where('status', 1)->count();
-
-            Excel::import(new AnggotaOrganisasiImport((int) $id, $this->currentUser()), $request->file('file'));
-
-            $sesudah = SiswaOrganisasi::where('organisasi_id', $id)->where('status', 1)->count();
-            $jumlah  = $sesudah - $sebelum;
-
+            Excel::import($importer, $request->file('file'));
             DB::commit();
         } catch (Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal import: ' . $e->getMessage());
         }
 
-        return redirect()->route('Organisasi.edit', $id)
-            ->with('success', 'Import berhasil! ' . $jumlah . ' anggota berhasil ditambahkan.');
+        $jumlah = $importer->imported;
+
+        if ($jumlah === 0) {
+            $detail = !empty($importer->errors)
+                ? ' Detail: ' . implode(' | ', array_slice($importer->errors, 0, 5))
+                : ' Pastikan file mengikuti format template (header baris pertama, data mulai baris 2).';
+            return redirect()->route('Organisasi.edit', $id)
+                ->with('error', 'Tidak ada anggota yang berhasil ditambahkan.' . $detail);
+        }
+
+        $msg = "Import berhasil! {$jumlah} anggota berhasil ditambahkan.";
+        if (!empty($importer->errors)) {
+            $msg .= ' (' . count($importer->errors) . ' baris dilewati: '
+                  . implode(' | ', array_slice($importer->errors, 0, 3)) . ')';
+        }
+
+        return redirect()->route('Organisasi.edit', $id)->with('success', $msg);
     }
 }

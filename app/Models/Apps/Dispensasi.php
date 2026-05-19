@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Apps\Organisasi;
 use App\Models\Apps\PeriodeAkademik;
 use App\Models\Reference\StatusValidasi;
+use App\Models\User;
 
 class Dispensasi extends Model
 {
@@ -35,5 +36,15 @@ class Dispensasi extends Model
     public function details()
     {
         return $this->hasMany(DispensasiDetail::class, 'dispensasi_id')->where('status', 1);
+    }
+
+    public function userInput()
+    {
+        return $this->belongsTo(User::class, 'user_input', 'id');
+    }
+
+    public function userUpdate()
+    {
+        return $this->belongsTo(User::class, 'user_update', 'id');
     }
 }

@@ -22,7 +22,7 @@ class AbsensiController extends Controller
     {
         // Wali Kelas tidak punya akses ke index umum, redirect ke halaman validasinya
         if (auth()->user()->hasRole('Wali Kelas')) {
-            return redirect()->route('Absensi.walikelas.index');
+            return redirect()->route('Absensi.validasi.index');
         }
 
         $ketuaKelasId = null;
@@ -33,13 +33,24 @@ class AbsensiController extends Controller
             }
         }
 
+        // Default Periode Akademik = periode aktif (status = 1)
+        $periodeAktif = PeriodeAkademik::where('status', 1)->first();
+        $periodeId    = $request->filled('periode_akademik_id')
+                      ? (int) $request->periode_akademik_id
+                      : ($periodeAktif?->id);
+
+        // Tabel atas: semua absensi yang belum Disetujui
         $query = Absensi::withCount('details')
-            ->with(['kelas', 'periodeAkademik', 'statusValidasi'])
+            ->with(['kelas', 'periodeAkademik', 'statusValidasi', 'userUpdate', 'userInput'])
             ->where('status', 1)
+            ->where('status_validasi_id', '!=', 5)
             ->orderByDesc('tanggal');
 
-        if ($request->filled('tanggal')) {
-            $query->whereDate('tanggal', $request->tanggal);
+        if ($request->filled('dari')) {
+            $query->whereDate('tanggal', '>=', $request->dari);
+        }
+        if ($request->filled('sampai')) {
+            $query->whereDate('tanggal', '<=', $request->sampai);
         }
 
         if ($ketuaKelasId) {
@@ -48,16 +59,47 @@ class AbsensiController extends Controller
             $query->where('kelas_id', $request->kelas_id);
         }
 
-        $absensiList               = $query->get();
+        if ($periodeId) {
+            $query->where('periode_akademik_id', $periodeId);
+        }
+
+        $absensiList = $query->get();
+
+        // Tabel bawah: history (Disetujui)
+        $historyQuery = Absensi::with(['kelas', 'periodeAkademik', 'statusValidasi', 'userUpdate', 'userInput'])
+            ->where('status', 1)
+            ->where('status_validasi_id', 5)
+            ->orderByDesc('tanggal_update');
+
+        if ($request->filled('dari')) {
+            $historyQuery->whereDate('tanggal', '>=', $request->dari);
+        }
+        if ($request->filled('sampai')) {
+            $historyQuery->whereDate('tanggal', '<=', $request->sampai);
+        }
+
+        if ($ketuaKelasId) {
+            $historyQuery->where('kelas_id', $ketuaKelasId);
+        } elseif ($request->filled('kelas_id')) {
+            $historyQuery->where('kelas_id', $request->kelas_id);
+        }
+
+        if ($periodeId) {
+            $historyQuery->where('periode_akademik_id', $periodeId);
+        }
+
+        $historyList = $historyQuery->get();
+
         $kelas                     = $ketuaKelasId
             ? Kelas::where('status', 1)->where('id', $ketuaKelasId)->get()
             : Kelas::where('status', 1)->orderBy('nama_kelas')->get();
+        $periodeList               = PeriodeAkademik::where('status', 1)->orderByDesc('id')->get();
         $statusMenungguPengisianId = StatusValidasi::where('nama_status', 'Menunggu Pengisian')
                                         ->where('status', 1)->value('id');
         $statusPerluRevisiId       = StatusValidasi::where('nama_status', 'Perlu Revisi')
                                         ->where('status', 1)->value('id');
 
-        return view('Absensi.index', compact('absensiList', 'kelas', 'statusMenungguPengisianId', 'statusPerluRevisiId'));
+        return view('Absensi.index', compact('absensiList', 'historyList', 'kelas', 'periodeList', 'periodeId', 'statusMenungguPengisianId', 'statusPerluRevisiId'));
     }
 
     public function create()
@@ -335,14 +377,25 @@ class AbsensiController extends Controller
         $user         = auth()->user();
         $scopeKelasId = $this->resolveValidationScopeKelasId();
 
+        // Default Periode Akademik = periode aktif (status = 1)
+        $periodeAktif = PeriodeAkademik::where('status', 1)->first();
+        $periodeId    = $request->filled('periode_akademik_id')
+                      ? (int) $request->periode_akademik_id
+                      : ($periodeAktif?->id);
+
         // Tabel atas: absensi menunggu validasi
-        $query = Absensi::with(['kelas', 'periodeAkademik', 'statusValidasi'])
+        $query = Absensi::with(['kelas', 'periodeAkademik', 'statusValidasi', 'userUpdate', 'userInput'])
             ->where('status', 1)
             ->where('status_validasi_id', 3)
             ->orderByDesc('tanggal');
 
         if ($scopeKelasId) {
             $query->where('kelas_id', $scopeKelasId);
+        } elseif ($request->filled('kelas_id')) {
+            $query->where('kelas_id', $request->kelas_id);
+        }
+        if ($periodeId) {
+            $query->where('periode_akademik_id', $periodeId);
         }
         if ($request->filled('dari')) {
             $query->whereDate('tanggal', '>=', $request->dari);
@@ -353,14 +406,19 @@ class AbsensiController extends Controller
 
         $absensiList = $query->get();
 
-        // Tabel bawah: sudah divalidasi (history)
-        $historyQuery = Absensi::with(['kelas', 'periodeAkademik', 'statusValidasi'])
+        // Tabel bawah: sudah Disetujui (history)
+        $historyQuery = Absensi::with(['kelas', 'periodeAkademik', 'statusValidasi', 'userUpdate', 'userInput'])
             ->where('status', 1)
-            ->whereIn('status_validasi_id', [4, 5, 6])
+            ->where('status_validasi_id', 5)
             ->orderByDesc('tanggal_update');
 
         if ($scopeKelasId) {
             $historyQuery->where('kelas_id', $scopeKelasId);
+        } elseif ($request->filled('kelas_id')) {
+            $historyQuery->where('kelas_id', $request->kelas_id);
+        }
+        if ($periodeId) {
+            $historyQuery->where('periode_akademik_id', $periodeId);
         }
         if ($request->filled('dari')) {
             $historyQuery->whereDate('tanggal', '>=', $request->dari);
@@ -370,9 +428,16 @@ class AbsensiController extends Controller
         }
 
         $historyList = $historyQuery->get();
-        $kelas       = null;
 
-        return view('Absensi/index-walikelas', compact('absensiList', 'historyList', 'kelas'));
+        $scopeKelas  = $scopeKelasId ? Kelas::find($scopeKelasId) : null;
+        $kelasList   = $scopeKelasId
+                     ? Kelas::where('id', $scopeKelasId)->get()
+                     : Kelas::where('status', 1)->orderBy('nama_kelas')->get();
+        $periodeList = PeriodeAkademik::where('status', 1)->orderByDesc('id')->get();
+
+        return view('Absensi/index-walikelas', compact(
+            'absensiList', 'historyList', 'scopeKelas', 'kelasList', 'periodeList', 'periodeId'
+        ));
     }
 
     /**
@@ -415,7 +480,7 @@ class AbsensiController extends Controller
             'tanggal_update'       => now(),
         ]);
 
-        return redirect()->route('Absensi.walikelas.index')
+        return redirect()->route('Absensi.validasi.index')
             ->with('success', 'Absensi berhasil divalidasi.');
     }
 
@@ -454,7 +519,7 @@ class AbsensiController extends Controller
             ? $updated . ' absensi ditandai perlu revisi.'
             : $updated . ' absensi berhasil divalidasi.';
 
-        return redirect()->route('Absensi.walikelas.index')
+        return redirect()->route('Absensi.validasi.index')
             ->with('success', $message);
     }
 

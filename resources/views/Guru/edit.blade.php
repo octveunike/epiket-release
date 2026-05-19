@@ -8,6 +8,8 @@
                 Admin /
                 @if (request('return_to') === 'kelas_edit' && request('kelas_id'))
                     <a href="{{ route('Kelas.edit', request('kelas_id')) }}" style="color:var(--primary);">Edit Kelas</a> /
+                @elseif (request('return_to') === 'kelas_create')
+                    <a href="{{ route('Kelas.create') }}" style="color:var(--primary);">Tambah Kelas</a> /
                 @endif
                 <a href="{{ route('Guru.index') }}" style="color:var(--primary);">Data Guru</a> / Edit
             </div>
@@ -23,7 +25,15 @@
     @endif
 
     <div class="card">
-        <form method="POST" action="{{ route('Guru.update', $Guru->id) }}{{ request('return_to') === 'kelas_edit' && request('kelas_id') ? '?return_to=kelas_edit&kelas_id=' . request('kelas_id') : '' }}">
+        @php
+            $returnQuery = '';
+            if (request('return_to') === 'kelas_edit' && request('kelas_id')) {
+                $returnQuery = '?return_to=kelas_edit&kelas_id=' . request('kelas_id');
+            } elseif (request('return_to') === 'kelas_create') {
+                $returnQuery = '?return_to=kelas_create';
+            }
+        @endphp
+        <form method="POST" action="{{ route('Guru.update', $Guru->id) }}{{ $returnQuery }}">
             @csrf
             @method('PUT')
 
@@ -79,6 +89,10 @@
                 </button>
                 @if (request('return_to') === 'kelas_edit' && request('kelas_id'))
                     <a href="{{ route('Kelas.edit', request('kelas_id')) }}" class="btn btn-secondary">
+                        <i class="ri-arrow-left-line"></i> Batal
+                    </a>
+                @elseif (request('return_to') === 'kelas_create')
+                    <a href="{{ route('Kelas.create') }}" class="btn btn-secondary">
                         <i class="ri-arrow-left-line"></i> Batal
                     </a>
                 @else

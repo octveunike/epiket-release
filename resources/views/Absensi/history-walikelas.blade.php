@@ -4,17 +4,23 @@
 
 <div class="page-header">
     <div>
-        <div class="breadcrumb">Wali Kelas / <span class="breadcrumb-link">History Validasi</span></div>
+        @php
+            $u = auth()->user();
+            $breadcrumbRole = $u->hasRole('Admin')
+                ? 'Admin'
+                : ($u->hasRole('Petugas Piket') ? 'Petugas Piket' : 'Wali Kelas');
+        @endphp
+        <div class="breadcrumb">{{ $breadcrumbRole }} / <span class="breadcrumb-link">History Validasi</span></div>
         <h2>History Validasi Absensi</h2>
     </div>
-    <a href="{{ route('Absensi.walikelas.index') }}" class="btn btn-secondary">
+    <a href="{{ route('Absensi.validasi.index') }}" class="btn btn-secondary">
         <i class="ri-arrow-left-line"></i> Kembali
     </a>
 </div>
 
 {{-- Filter --}}
 <div class="card" style="padding:14px 20px;margin-bottom:16px;">
-    <form method="GET" action="{{ route('Absensi.walikelas.history') }}" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+    <form method="GET" action="{{ route('Absensi.validasi.history') }}" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
         <div class="form-group" style="margin-bottom:0;min-width:160px;">
             <label class="form-label">Dari Tanggal</label>
             <input type="date" name="dari" class="form-control" value="{{ request('dari') }}">
@@ -26,7 +32,7 @@
         <button type="submit" class="btn btn-primary" style="margin-bottom:0;">
             <i class="ri-filter-line"></i> Filter
         </button>
-        <a href="{{ route('Absensi.walikelas.history') }}" class="btn btn-secondary" style="margin-bottom:0;">
+        <a href="{{ route('Absensi.validasi.history') }}" class="btn btn-secondary" style="margin-bottom:0;">
             <i class="ri-refresh-line"></i> Reset
         </a>
     </form>

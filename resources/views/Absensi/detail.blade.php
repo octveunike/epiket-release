@@ -159,7 +159,7 @@
                         @empty
                             <tr>
                                 <td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">
-                                    Tidak ada data kehadiran untuk kelas ini
+                                    Tidak ada data ketidakhadiran untuk kelas ini
                                 </td>
                             </tr>
                         @endforelse

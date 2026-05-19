@@ -40,11 +40,27 @@
 
         <div class="form-group" style="margin-bottom:0;min-width:180px;">
             <label class="form-label">Kelas</label>
-            <select name="kelas_id" class="form-control">
-                <option value="">Semua Kelas</option>
-                @foreach ($kelas as $k)
-                    <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
-                        {{ $k->nama_kelas }}
+            @if ($scopeKelas)
+                <input type="hidden" name="kelas_id" value="{{ $scopeKelas->id }}">
+                <input type="text" class="form-control" value="{{ $scopeKelas->nama_kelas }}" readonly tabindex="-1">
+            @else
+                <select name="kelas_id" class="form-control">
+                    <option value="">Semua Kelas</option>
+                    @foreach ($kelas as $k)
+                        <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
+                            {{ $k->nama_kelas }}
+                        </option>
+                    @endforeach
+                </select>
+            @endif
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;min-width:180px;">
+            <label class="form-label">Periode Akademik</label>
+            <select name="periode_akademik_id" class="form-control">
+                @foreach ($periodeList as $p)
+                    <option value="{{ $p->id }}" {{ $periodeId == $p->id ? 'selected' : '' }}>
+                        {{ $p->nama_periode }}
                     </option>
                 @endforeach
             </select>
@@ -65,37 +81,34 @@
             data-destroy-url="{{ route('Keterlambatan.destroy', '') }}">
             <thead>
                 <tr>
-                    <th style="text-align:center; width:5%;">No</th>
-                    <th style="text-align:center;">Tanggal</th>
-                    <th style="text-align:center;">Nama Siswa</th>
-                    <th style="text-align:center;">Kelas</th>
-                    <th style="text-align:center;">Waktu Masuk</th>
-                    <th style="text-align:center;">Alasan</th>
-                    <th style="text-align:center;">Periode</th>
-                    <th style="text-align:center;">Aksi</th>
+                    <th class="col-no">No</th>
+                    <th>Tanggal</th>
+                    <th>Nama Siswa</th>
+                    <th>Kelas</th>
+                    <th class="col-center">Waktu Masuk</th>
+                    <th>Alasan</th>
+                    <th class="col-center">Aksi</th>
+                    <th>Update Terakhir</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($keterlambatan as $kt)
                     <tr>
                         <td class="col-no">{{ $loop->iteration }}</td>
-                        <td>
-                            <strong>{{ \Carbon\Carbon::parse($kt->absensi->tanggal)->translatedFormat('d F Y') }}</strong>
-                            <div class="text-muted-sm">{{ \Carbon\Carbon::parse($kt->absensi->tanggal)->translatedFormat('l') }}</div>
-                        </td>
+                        <td><strong>{{ \Carbon\Carbon::parse($kt->absensi->tanggal)->locale('id')->translatedFormat('l, d F Y') }}</strong></td>
                         <td><strong>{{ $kt->siswa->nama_siswa ?? '—' }}</strong></td>
                         <td>{{ $kt->absensi->kelas->nama_kelas ?? '—' }}</td>
-                        <td class="col-center" style="font-weight:600;color:var(--primary);">
+                        <td class="col-center" style="font-weight:600;color:#ef4444;">
                             {{ \Carbon\Carbon::parse($kt->waktu_masuk)->format('H:i') }}
                         </td>
-                        <td class="text-muted-sm">{{ $kt->alasan ?: '—' }}</td>
-                        <td class="text-muted-sm">{{ $kt->periodeAkademik->nama_periode ?? '—' }}</td>
-                        <td class="col-center">
+                        <td>{{ $kt->alasan ?: '—' }}</td>
+                        <td class="col-center" style="white-space:nowrap;">
                             <button type="button" class="btn btn-sm btn-danger"
                                 onclick="showDeleteModal({{ $kt->id }}, '{{ $kt->siswa->nama_siswa ?? '' }}')">
                                 <i class="ri-delete-bin-line"></i> Hapus
                             </button>
                         </td>
+                        <td>{{ $kt->userUpdate->nama ?? $kt->userInput->nama ?? 'Auto' }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -108,8 +121,7 @@
     <div class="confirm-box">
         <div class="confirm-icon">!</div>
         <h3>Hapus Keterlambatan?</h3>
-        <p>Data yang dihapus tidak dapat dikembalikan.<br>
-        <small class="text-danger-sm">Status absensi siswa akan dikembalikan ke Hadir.</small></p>
+        <p>Data yang dihapus tidak dapat dikembalikan.</p>
         <div class="confirm-actions">
             <form id="delete-form" method="POST">
                 @csrf

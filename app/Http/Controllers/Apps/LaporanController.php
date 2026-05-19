@@ -93,18 +93,17 @@ class LaporanController extends Controller
                 $query->whereHas('siswa', fn($q) => $q->where('nama_siswa', 'like', "%{$nama}%"));
             }
             foreach ($query->get() as $detail) {
-                $tgl    = Carbon::parse($detail->absensi->tanggal);
-                $user   = User::find($detail->absensi->user_input);
+                $tgl    = Carbon::parse($detail->absensi->tanggal)->locale('id');
+                $user   = User::find($detail->absensi->user_update ?? $detail->absensi->user_input);
                 $rows[] = [
                     'tanggal_sort' => $tgl->timestamp,
                     'hari'         => $tgl->translatedFormat('l'),
                     'tanggal'      => $tgl->translatedFormat('d F Y'),
                     'nama_siswa'   => $detail->siswa->nama_siswa ?? '—',
                     'kelas'        => $detail->absensi->kelas->nama_kelas ?? '—',
-                    'kategori'     => 'Absensi',
-                    'deskripsi'    => $detail->statusAbsensi->keterangan ?? '—',
-                    'keterangan'   => $detail->keterangan ?? '—',
-                    'penginput'    => $user->nama ?? '—',
+                    'kategori'     => $detail->statusAbsensi->keterangan ?? 'Absensi',
+                    'deskripsi'    => $detail->keterangan ?? '—',
+                    'penginput'    => $user->nama ?? 'Auto',
                 ];
             }
         }
@@ -123,8 +122,8 @@ class LaporanController extends Controller
                 $query->whereHas('siswa', fn($q) => $q->where('nama_siswa', 'like', "%{$nama}%"));
             }
             foreach ($query->get() as $kt) {
-                $tgl    = Carbon::parse($kt->absensi->tanggal);
-                $user   = User::find($kt->user_input);
+                $tgl    = Carbon::parse($kt->absensi->tanggal)->locale('id');
+                $user   = User::find($kt->user_update ?? $kt->user_input);
                 $rows[] = [
                     'tanggal_sort' => $tgl->timestamp,
                     'hari'         => $tgl->translatedFormat('l'),
@@ -133,8 +132,7 @@ class LaporanController extends Controller
                     'kelas'        => $kt->absensi->kelas->nama_kelas ?? '—',
                     'kategori'     => 'Keterlambatan',
                     'deskripsi'    => 'Terlambat — masuk ' . Carbon::parse($kt->waktu_masuk)->format('H:i'),
-                    'keterangan'   => $kt->alasan ?? '—',
-                    'penginput'    => $user->nama ?? '—',
+                    'penginput'    => $user->nama ?? 'Auto',
                 ];
             }
         }
@@ -159,8 +157,8 @@ class LaporanController extends Controller
                     // Filter nama
                     if ($nama && stripos($siswa->nama_siswa ?? '', $nama) === false) continue;
 
-                    $tgl    = Carbon::parse($disp->waktu_mulai);
-                    $user   = User::find($disp->user_input);
+                    $tgl    = Carbon::parse($disp->waktu_mulai)->locale('id');
+                    $user   = User::find($disp->user_update ?? $disp->user_input);
                     $rows[] = [
                         'tanggal_sort' => $tgl->timestamp,
                         'hari'         => $tgl->translatedFormat('l'),
@@ -169,8 +167,7 @@ class LaporanController extends Controller
                         'kelas'        => $siswa->kelas->nama_kelas ?? '—',
                         'kategori'     => 'Dispensasi',
                         'deskripsi'    => $disp->kegiatan ?? '—',
-                        'keterangan'   => '—',
-                        'penginput'    => $user->nama ?? '—',
+                        'penginput'    => $user->nama ?? 'Auto',
                     ];
                 }
             }

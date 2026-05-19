@@ -26,7 +26,7 @@
                 <div class="form-group">
                     <label class="form-label">Nama Kelas <span class="required">*</span></label>
                     <input type="text" name="nama_kelas" class="form-control"
-                        placeholder="Contoh: X-A, XI-IPA-1, XII-B"
+                        placeholder="Contoh: X A, XI A, XII A"
                         value="{{ old('nama_kelas', $Kelas->nama_kelas) }}" required>
                     @error('nama_kelas')<small style="color:#ef4444;">{{ $message }}</small>@enderror
                 </div>
@@ -67,7 +67,7 @@
                     <div id="wali-warning" class="account-warning" style="display:{{ $errors->has('wali_kelas_id') ? 'flex' : 'none' }};">
                         <i class="ri-error-warning-line"></i>
                         <span>Guru ini belum punya akun untuk dijadikan Wali Kelas.</span>
-                        <a href="#" id="wali-edit-link" target="_blank">Edit Guru</a>
+                        <a href="#" id="wali-edit-link">Edit Guru</a>
                     </div>
                 </div>
 
@@ -91,7 +91,7 @@
                     <div id="ketua-warning" class="account-warning" style="display:{{ $errors->has('ketua_kelas_id') ? 'flex' : 'none' }};">
                         <i class="ri-error-warning-line"></i>
                         <span>Siswa ini belum punya akun untuk dijadikan Ketua Kelas.</span>
-                        <a href="#" id="ketua-edit-link" target="_blank">Edit Siswa</a>
+                        <a href="#" id="ketua-edit-link">Edit Siswa</a>
                     </div>
                 </div>
 
@@ -114,8 +114,37 @@
 @push('scripts')
 <script>
 (function () {
-    // Query param untuk dibawa ke halaman Edit Guru/Siswa supaya bisa balik ke sini
-    const returnParam = '?return_to=kelas_edit&kelas_id={{ $Kelas->id }}';
+    const form         = document.querySelector('form[action="{{ route('Kelas.update', $Kelas->id) }}"]');
+    const STORAGE_KEY  = 'kelas_edit_draft_{{ $Kelas->id }}';
+    const returnParam  = '?return_to=kelas_edit&kelas_id={{ $Kelas->id }}';
+
+    // Restore draft kalau user balik dari Edit Guru/Siswa
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved && form) {
+        try {
+            const data = JSON.parse(saved);
+            Object.keys(data).forEach(name => {
+                const field = form.querySelector(`[name="${name}"]`);
+                if (field) field.value = data[name];
+            });
+        } catch (e) {}
+        localStorage.removeItem(STORAGE_KEY);
+    }
+
+    // Simpan draft sebelum navigate ke Edit Guru/Siswa
+    document.querySelectorAll('#wali-edit-link, #ketua-edit-link').forEach(a => {
+        a.addEventListener('click', () => {
+            if (!form) return;
+            const data = {};
+            new FormData(form).forEach((v, k) => {
+                if (k !== '_token' && k !== '_method') data[k] = v;
+            });
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        });
+    });
+
+    // Bersihkan draft saat user submit form
+    if (form) form.addEventListener('submit', () => localStorage.removeItem(STORAGE_KEY));
 
     function bindAccountGuard({ selectId, warnId, linkId, editUrlTemplate, dataKey }) {
         const sel      = document.getElementById(selectId);

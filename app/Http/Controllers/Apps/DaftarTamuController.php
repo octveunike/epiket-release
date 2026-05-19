@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Apps;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Apps\DaftarTamu;
+use App\Exports\DaftarTamuExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
@@ -13,10 +15,32 @@ class DaftarTamuController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $data = DaftarTamu::where('status', '1')->get();
+        $data = $this->buildQuery($request)->get();
         return view('DaftarTamu.index', compact('data'));
+    }
+
+    public function export(Request $request)
+    {
+        $rows     = $this->buildQuery($request)->get();
+        $filename = 'Daftar_Tamu_' . now()->format('Ymd_His') . '.xlsx';
+
+        return Excel::download(new DaftarTamuExport($rows, $request->only(['dari', 'sampai'])), $filename);
+    }
+
+    private function buildQuery(Request $request)
+    {
+        $query = DaftarTamu::with(['userUpdate', 'userInput'])->where('status', '1');
+
+        if ($request->filled('dari')) {
+            $query->whereDate('tanggal_kunjungan', '>=', $request->dari);
+        }
+        if ($request->filled('sampai')) {
+            $query->whereDate('tanggal_kunjungan', '<=', $request->sampai);
+        }
+
+        return $query->orderBy('tanggal_kunjungan', 'desc');
     }
 
     /**

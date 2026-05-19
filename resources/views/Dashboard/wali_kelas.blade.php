@@ -53,7 +53,7 @@
             <span>{{ $periodeAktif->nama_periode }}</span>
         @endif
     </div>
-    <a href="{{ route('Absensi.walikelas.index') }}" class="btn btn-sm btn-secondary">
+    <a href="{{ route('Absensi.validasi.index') }}" class="btn btn-sm btn-secondary">
         <i class="ri-history-line"></i> Riwayat Absensi
     </a>
 </div>

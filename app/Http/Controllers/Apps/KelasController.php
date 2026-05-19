@@ -81,10 +81,19 @@ class KelasController extends Controller
     {
         $Kelas   = Kelas::findOrFail($id);
         $guru    = Guru::where('status', '1')->get();
-        $siswa   = Siswa::where('status', '1')
-                        ->where('kelas_id', $Kelas->id)
-                        ->orderBy('nama_siswa')
-                        ->get(['id', 'nama_siswa', 'user_id', 'kelas_id']);
+
+        // Tampilkan siswa kelas ini, plus ketua kelas yang sudah tersimpan
+        // (kalau kebetulan kelas_id-nya beda — supaya option-nya tetap muncul di dropdown).
+        $siswa = Siswa::where('status', '1')
+                      ->where(function ($q) use ($Kelas) {
+                          $q->where('kelas_id', $Kelas->id);
+                          if ($Kelas->ketua_kelas_id) {
+                              $q->orWhere('id', $Kelas->ketua_kelas_id);
+                          }
+                      })
+                      ->orderBy('nama_siswa')
+                      ->get(['id', 'nama_siswa', 'user_id', 'kelas_id']);
+
         $periode = PeriodeAkademik::where('status', '1')->get();
 
         return view('Kelas.edit', compact('Kelas', 'guru', 'siswa', 'periode'));

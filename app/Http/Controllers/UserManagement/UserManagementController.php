@@ -52,8 +52,11 @@ class UserManagementController extends Controller
             'username'   => ['required', 'string', 'max:50', 'unique:users,username'],
             'email'      => ['required', 'email', 'max:100', 'unique:users,email'],
             'password'   => ['required', 'string', 'min:6', 'confirmed'],
-            'role_ids'   => ['nullable', 'array'],
+            'role_ids'   => ['required', 'array', 'min:1'],
             'role_ids.*' => ['integer', 'exists:roles,id'],
+        ], [
+            'role_ids.required' => 'Pilih minimal 1 role untuk akun ini.',
+            'role_ids.min'      => 'Pilih minimal 1 role untuk akun ini.',
         ]);
 
         $user = auth()->user();
@@ -174,11 +177,14 @@ class UserManagementController extends Controller
             'email'    => ['required', 'email', 'max:100', 'unique:users,email,' . $id],
             'password' => ['nullable', 'string', 'min:6', 'confirmed'],
         ];
+        $messages = [];
         if ($isAdmin) {
-            $rules['role_ids']   = ['nullable', 'array'];
+            $rules['role_ids']   = ['required', 'array', 'min:1'];
             $rules['role_ids.*'] = ['integer', 'exists:roles,id'];
+            $messages['role_ids.required'] = 'Pilih minimal 1 role untuk akun ini.';
+            $messages['role_ids.min']      = 'Pilih minimal 1 role untuk akun ini.';
         }
-        $request->validate($rules);
+        $request->validate($rules, $messages);
 
         $currentUser = $authUser->username
             ?? $authUser->nama
@@ -227,6 +233,15 @@ class UserManagementController extends Controller
         } catch (Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', $e->getMessage());
+        }
+
+        $passwordChanged = $request->filled('password');
+
+        // Non-admin yang ubah password sendiri → balik ke halaman edit
+        // dengan flash khusus untuk memicu modal "Password Berhasil Diubah".
+        if (!$isAdmin && $passwordChanged) {
+            return redirect()->route('UserManagement.edit', $id)
+                ->with('password_changed', true);
         }
 
         $redirectRoute = $isAdmin ? 'UserManagement.index' : 'admin.index';

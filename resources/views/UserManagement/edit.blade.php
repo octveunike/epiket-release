@@ -22,7 +22,7 @@
     @endif
 
     <div class="card">
-        <form method="POST" action="{{ route('UserManagement.update', $User->id) }}">
+        <form method="POST" action="{{ route('UserManagement.update', $User->id) }}" id="editForm">
             @csrf
             @method('PUT')
 
@@ -55,9 +55,9 @@
                 {{-- Role: custom dropdown checklist (hanya Admin yang boleh mengubah) --}}
                 @if ($canEditRole)
                 <div class="form-group">
-                    <label class="form-label">Role</label>
+                    <label class="form-label">Role <span class="required">*</span></label>
                     <div class="role-dropdown-wrap" id="roleWrap">
-                        <div class="role-trigger" id="roleTrigger" onclick="toggleRoleDropdown()">
+                        <div class="role-trigger {{ $errors->has('role_ids') ? 'has-error' : '' }}" id="roleTrigger" onclick="toggleRoleDropdown()">
                             <span id="roleTriggerText" style="color:#94a3b8;">-- Pilih Role --</span>
                             <i class="ri-arrow-down-s-line" id="roleArrow" style="font-size:16px;color:#94a3b8;transition:.2s;"></i>
                         </div>
@@ -129,6 +129,22 @@
         </form>
     </div>
 
+    {{-- Modal sukses ubah password (style mengikuti modal konfirmasi di index Guru) --}}
+    @if (session('password_changed'))
+        <div class="confirm-overlay show" id="pwSuccessModal">
+            <div class="confirm-box">
+                <div class="confirm-icon" style="border-color:var(--primary);color:var(--primary);">
+                    <i class="ri-check-line"></i>
+                </div>
+                <h3>Password Berhasil Diubah</h3>
+                <p>Password akun Anda sudah berhasil diperbarui.</p>
+                <div class="confirm-actions">
+                    <a href="{{ route('admin.index') }}" class="btn btn-primary">OK</a>
+                </div>
+            </div>
+        </div>
+    @endif
+
 @endsection
 
 @push('styles')
@@ -142,6 +158,7 @@
 }
 .role-trigger:hover{border-color:var(--primary);}
 .role-trigger.open{border-color:var(--primary);box-shadow:0 0 0 3px rgba(76,175,80,.12);}
+.role-trigger.has-error{border-color:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.12);}
 .role-dropdown-list{
     display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;
     background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;
@@ -204,6 +221,41 @@
         }
     });
 
-    document.addEventListener('DOMContentLoaded', updateRoleTrigger);
+    // Sinkronkan label trigger dengan checkbox yang sudah ter-check (data role user).
+    // Dipanggil langsung karena script ini sudah berada di bawah DOM (di-render lewat
+    // stack scripts), jadi event DOMContentLoaded mungkin sudah lewat dan listener
+    // tidak akan jalan.
+    updateRoleTrigger();
+
+    // Guard: minimal 1 role harus dipilih (hanya jika dropdown role ditampilkan / user adalah Admin)
+    const editForm = document.getElementById('editForm');
+    if (editForm && document.getElementById('roleTrigger')) {
+        editForm.addEventListener('submit', function(e) {
+            const checked = document.querySelectorAll('input.role-cb:checked');
+            const trigger = document.getElementById('roleTrigger');
+            if (checked.length === 0) {
+                e.preventDefault();
+                trigger.classList.add('has-error');
+                trigger.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                alert('Pilih minimal 1 role untuk akun ini.');
+            }
+        });
+
+        document.querySelectorAll('input.role-cb').forEach(cb => {
+            cb.addEventListener('change', () => {
+                if (document.querySelectorAll('input.role-cb:checked').length > 0) {
+                    document.getElementById('roleTrigger').classList.remove('has-error');
+                }
+            });
+        });
+    }
+
+    // Modal sukses ubah password — backdrop click juga arahkan ke dashboard
+    const pwSuccessModal = document.getElementById('pwSuccessModal');
+    if (pwSuccessModal) {
+        pwSuccessModal.addEventListener('click', function(e) {
+            if (e.target === this) window.location.href = "{{ route('admin.index') }}";
+        });
+    }
 </script>
 @endpush

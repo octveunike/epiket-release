@@ -41,9 +41,9 @@
 
                 {{-- Role: custom dropdown checklist --}}
                 <div class="form-group">
-                    <label class="form-label">Role</label>
+                    <label class="form-label">Role <span class="required">*</span></label>
                     <div class="role-dropdown-wrap" id="roleWrap">
-                        <div class="role-trigger" id="roleTrigger" onclick="toggleRoleDropdown()">
+                        <div class="role-trigger {{ $errors->has('role_ids') ? 'has-error' : '' }}" id="roleTrigger" onclick="toggleRoleDropdown()">
                             <span id="roleTriggerText" style="color:#94a3b8;">-- Pilih Role --</span>
                             <i class="ri-arrow-down-s-line" id="roleArrow" style="font-size:16px;color:#94a3b8;transition:.2s;"></i>
                         </div>
@@ -124,6 +124,7 @@
 }
 .role-trigger:hover{border-color:var(--primary);}
 .role-trigger.open{border-color:var(--primary);box-shadow:0 0 0 3px rgba(76,175,80,.12);}
+.role-trigger.has-error{border-color:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.12);}
 .role-dropdown-list{
     display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;
     background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;
@@ -184,6 +185,29 @@
         }
     });
 
-    document.addEventListener('DOMContentLoaded', updateRoleTrigger);
+    // Sinkronkan label trigger dengan state checkbox awal (mis. saat validasi gagal
+    // dan old('role_ids') me-restore yang sudah dipilih).
+    updateRoleTrigger();
+
+    // Guard: minimal 1 role harus dipilih
+    document.getElementById('createForm').addEventListener('submit', function(e) {
+        const checked = document.querySelectorAll('input.role-cb:checked');
+        const trigger = document.getElementById('roleTrigger');
+        if (checked.length === 0) {
+            e.preventDefault();
+            trigger.classList.add('has-error');
+            trigger.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            alert('Pilih minimal 1 role untuk akun ini.');
+        }
+    });
+
+    // Hilangkan highlight error begitu user mulai centang
+    document.querySelectorAll('input.role-cb').forEach(cb => {
+        cb.addEventListener('change', () => {
+            if (document.querySelectorAll('input.role-cb:checked').length > 0) {
+                document.getElementById('roleTrigger').classList.remove('has-error');
+            }
+        });
+    });
 </script>
 @endpush

@@ -43,8 +43,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/add',      [App\Http\Controllers\Apps\AbsensiController::class, 'store'])->name('store');
         Route::post('/generate', [App\Http\Controllers\Apps\AbsensiController::class, 'generate'])->name('generate');
 
-        // ⚠️ Wali Kelas routes HARUS di atas /{id} agar tidak tertangkap wildcard
-        Route::prefix('wali')->name('walikelas.')->group(function () {
+        // ⚠️ Validasi routes (Wali Kelas / Petugas Piket / Admin)
+        // HARUS di atas /{id} agar tidak tertangkap wildcard
+        Route::prefix('validasi')->name('validasi.')->group(function () {
             Route::get('/',        [App\Http\Controllers\Apps\AbsensiController::class, 'waliKelasIndex'])->name('index');
             Route::get('/history', [App\Http\Controllers\Apps\AbsensiController::class, 'waliKelasHistory'])->name('history');
             Route::post('/bulk',   [App\Http\Controllers\Apps\AbsensiController::class, 'waliKelasBulkValidasi'])->name('bulkValidasi');
@@ -121,6 +122,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Daftar Tamu
     Route::get('/daftartamu',           [App\Http\Controllers\Apps\DaftarTamuController::class, 'index'])->name('DaftarTamu.index');
+    Route::get('/daftartamu/export',    [App\Http\Controllers\Apps\DaftarTamuController::class, 'export'])->name('DaftarTamu.export');
     Route::get('/daftartamu/add',       [App\Http\Controllers\Apps\DaftarTamuController::class, 'create'])->name('DaftarTamu.create');
     Route::post('/daftartamu/add',      [App\Http\Controllers\Apps\DaftarTamuController::class, 'store'])->name('DaftarTamu.store');
     Route::get('/daftartamu/{id}/edit', [App\Http\Controllers\Apps\DaftarTamuController::class, 'edit'])->name('DaftarTamu.edit');

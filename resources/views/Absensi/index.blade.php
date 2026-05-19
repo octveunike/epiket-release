@@ -33,8 +33,12 @@
 <div class="card" style="padding:14px 20px;margin-bottom:16px;">
     <form method="GET" action="{{ route('Absensi.index') }}" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
         <div class="form-group" style="margin-bottom:0;min-width:160px;">
-            <label class="form-label">Tanggal</label>
-            <input type="date" name="tanggal" class="form-control" value="{{ request('tanggal') }}">
+            <label class="form-label">Dari Tanggal</label>
+            <input type="date" name="dari" class="form-control" value="{{ request('dari') }}">
+        </div>
+        <div class="form-group" style="margin-bottom:0;min-width:160px;">
+            <label class="form-label">Sampai Tanggal</label>
+            <input type="date" name="sampai" class="form-control" value="{{ request('sampai') }}">
         </div>
         <div class="form-group" style="margin-bottom:0;min-width:180px;">
             <label class="form-label">Kelas</label>
@@ -53,6 +57,16 @@
                 </select>
             @endif
         </div>
+        <div class="form-group" style="margin-bottom:0;min-width:180px;">
+            <label class="form-label">Periode Akademik</label>
+            <select name="periode_akademik_id" class="form-control">
+                @foreach ($periodeList as $p)
+                    <option value="{{ $p->id }}" {{ $periodeId == $p->id ? 'selected' : '' }}>
+                        {{ $p->nama_periode }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
         <button type="submit" class="btn btn-primary" style="margin-bottom:0;">
             <i class="ri-filter-line"></i> Filter
         </button>
@@ -64,15 +78,15 @@
 
 <div class="card">
     <div class="table-responsive">
-        <table>
+        <table id="tableAbsensi" class="dt-table">
             <thead>
                 <tr>
                     <th class="col-no">No</th>
                     <th>Tanggal</th>
                     <th>Kelas</th>
-                    <th>Periode Akademik</th>
                     <th class="col-center">Status</th>
                     <th class="col-center">Aksi</th>
+                    <th>Update Terakhir</th>
                 </tr>
             </thead>
             <tbody>
@@ -86,12 +100,8 @@
                     @endphp
                     <tr>
                         <td class="col-no">{{ $loop->iteration }}</td>
-                        <td>
-                            <strong>{{ \Carbon\Carbon::parse($absensi->tanggal)->translatedFormat('d F Y') }}</strong>
-                            <div class="text-muted-sm">{{ \Carbon\Carbon::parse($absensi->tanggal)->translatedFormat('l') }}</div>
-                        </td>
+                        <td><strong>{{ \Carbon\Carbon::parse($absensi->tanggal)->locale('id')->translatedFormat('l, d F Y') }}</strong></td>
                         <td>{{ $absensi->kelas->nama_kelas ?? '—' }}</td>
-                        <td>{{ $absensi->periodeAkademik->nama_periode ?? '—' }}</td>
                         <td class="col-center">
                             <span style="font-size:13px;color:var(--text-main);">
                                 {{ $absensi->statusValidasi->nama_status ?? 'Menunggu Pengisian' }}
@@ -114,14 +124,54 @@
                                 </a>
                             @endif
                         </td>
+                        <td>{{ $absensi->userUpdate->nama ?? $absensi->userInput->nama ?? 'Auto' }}</td>
                     </tr>
                 @empty
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{{-- Tabel History (Disetujui) --}}
+<h3 style="margin-top:24px;margin-bottom:12px;font-size:16px;color:var(--text-main);">
+    <i class="ri-history-line"></i> History Absensi (Disetujui)
+</h3>
+<div class="card">
+    <div class="table-responsive">
+        <table id="tableAbsensiHistory" class="dt-table">
+            <thead>
+                <tr>
+                    <th class="col-no">No</th>
+                    <th>Tanggal Absensi</th>
+                    <th>Kelas</th>
+                    <th>Tanggal Validasi</th>
+                    <th class="col-center">Aksi</th>
+                    <th>Update Terakhir</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($historyList as $absensi)
                     <tr>
-                        <td colspan="6" class="td-empty">
-                            <i class="ri-calendar-check-line" style="font-size:32px;display:block;margin-bottom:8px;"></i>
-                            Belum ada data absensi.
+                        <td class="col-no">{{ $loop->iteration }}</td>
+                        <td><strong>{{ \Carbon\Carbon::parse($absensi->tanggal)->locale('id')->translatedFormat('l, d F Y') }}</strong></td>
+                        <td>{{ $absensi->kelas->nama_kelas ?? '—' }}</td>
+                        <td>
+                            @if ($absensi->tanggal_update)
+                                {{ \Carbon\Carbon::parse($absensi->tanggal_update)->translatedFormat('d F Y, H:i') }}
+                            @else
+                                —
+                            @endif
                         </td>
+                        <td class="col-center">
+                            <a href="{{ route('Absensi.show', $absensi->id) }}"
+                                class="btn btn-sm btn-secondary">
+                                <i class="ri-eye-line"></i> Detail Absensi
+                            </a>
+                        </td>
+                        <td>{{ $absensi->userUpdate->nama ?? $absensi->userInput->nama ?? 'Auto' }}</td>
                     </tr>
+                @empty
                 @endforelse
             </tbody>
         </table>

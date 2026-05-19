@@ -56,9 +56,9 @@
                 </li>
                 @endif
 
-                @if(auth()->user()->hasRole(['Wali Kelas','Petugas Piket']))
+                @if(auth()->user()->hasRole(['Wali Kelas','Petugas Piket','Admin']))
                 <li>
-                    <a href="{{ route('Absensi.walikelas.index') }}" class="{{ request()->routeIs('Absensi.walikelas.*') ? 'active' : '' }}">
+                    <a href="{{ route('Absensi.validasi.index') }}" class="{{ request()->routeIs('Absensi.validasi.*') ? 'active' : '' }}">
                         <i class="ri-checkbox-circle-line"></i><span>Validasi Absensi</span>
                     </a>
                 </li>
