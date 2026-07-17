@@ -39,7 +39,7 @@ class DispensasiPropagator
             ->where('status_validasi_id', $statusDisetujuiId)
             ->whereDate('waktu_mulai', '<=', $tanggal)
             ->whereDate('waktu_selesai', '>=', $tanggal)
-            ->get(['id', 'kegiatan']);
+            ->get(['id', 'nama_kegiatan']);
 
         if ($dispensasiList->isEmpty()) {
             return 0;
@@ -58,7 +58,7 @@ class DispensasiPropagator
             ->where('status', 1)
             ->get(['siswa_id', 'dispensasi_id']);
 
-        $kegiatanByDispensasi = $dispensasiList->pluck('kegiatan', 'id');
+        $namaKegiatanByDispensasi = $dispensasiList->pluck('nama_kegiatan', 'id');
 
         $existingSiswaIds = AbsensiDetail::where('absensi_id', $absensi->id)
             ->where('status', 1)
@@ -77,7 +77,7 @@ class DispensasiPropagator
                 'siswa_id'          => $d->siswa_id,
                 'status_absensi_id' => 4,
                 'is_full_day'       => 1,
-                'keterangan'        => 'Dispensasi: ' . ($kegiatanByDispensasi[$d->dispensasi_id] ?? '-'),
+                'keterangan'        => 'Dispensasi: ' . ($namaKegiatanByDispensasi[$d->dispensasi_id] ?? '-'),
                 'status'            => 1,
                 'user_input'        => $userInput,
                 'tanggal_input'     => now(),

@@ -21,12 +21,36 @@
         <script>setTimeout(function() { document.getElementById('success-alert').remove(); }, 3000);</script>
     @endif
 
+    @if (session('error'))
+        <div class="alert alert-danger">
+            <i class="ri-error-warning-line"></i> {{ session('error') }}
+        </div>
+    @endif
+
     <div class="card">
         <form method="POST" action="{{ route('UserManagement.update', $User->id) }}" id="editForm">
             @csrf
             @method('PUT')
+            <input type="hidden" name="confirm_change_ketua" id="confirmChangeKetua" value="">
+            <input type="hidden" name="confirm_change_wali" id="confirmChangeWali" value="">
 
             <div class="form-grid">
+
+                @if ($canEditRole)
+                {{-- Kategori & data terkait: tetap (tidak bisa diubah), menentukan role yang boleh dipilih.
+                     Guru -> Admin/Petugas Piket/Wali Kelas; Siswa -> Ketua Kelas saja. --}}
+                <div class="form-group">
+                    <label class="form-label">Kategori</label>
+                    <select class="form-control" disabled>
+                        <option>{{ $kategori }}</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Data Terkait</label>
+                    <input type="text" class="form-control" value="{{ $dataTerkait }}" disabled>
+                </div>
+                @endif
 
                 <div class="form-group">
                     <label class="form-label">Nama Lengkap <span class="required">*</span></label>
@@ -44,46 +68,13 @@
                     @error('username')<small style="color:#ef4444;">{{ $message }}</small>@enderror
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="grid-column:1 / -1;">
                     <label class="form-label">Email <span class="required">*</span></label>
                     <input type="email" name="email" class="form-control"
                         placeholder="Masukkan alamat email"
                         value="{{ old('email', $User->email) }}" required>
                     @error('email')<small style="color:#ef4444;">{{ $message }}</small>@enderror
                 </div>
-
-                {{-- Role: custom dropdown checklist (hanya Admin yang boleh mengubah) --}}
-                @if ($canEditRole)
-                <div class="form-group">
-                    <label class="form-label">Role <span class="required">*</span></label>
-                    <div class="role-dropdown-wrap" id="roleWrap">
-                        <div class="role-trigger {{ $errors->has('role_ids') ? 'has-error' : '' }}" id="roleTrigger" onclick="toggleRoleDropdown()">
-                            <span id="roleTriggerText" style="color:#94a3b8;">-- Pilih Role --</span>
-                            <i class="ri-arrow-down-s-line" id="roleArrow" style="font-size:16px;color:#94a3b8;transition:.2s;"></i>
-                        </div>
-                        <div class="role-dropdown-list" id="roleDropdownList">
-                            @forelse ($roles as $role)
-                                <label class="role-option">
-                                    <input type="checkbox" name="role_ids[]" value="{{ $role->id }}"
-                                        class="role-cb"
-                                        style="accent-color:var(--primary);"
-                                        {{ in_array($role->id, old('role_ids', $activeRoles)) ? 'checked' : '' }}
-                                        onchange="updateRoleTrigger()">
-                                    <span class="role-option-name">{{ $role->nama_role }}</span>
-                                    @if($role->keterangan)
-                                        <small class="role-option-desc">{{ $role->keterangan }}</small>
-                                    @endif
-                                </label>
-                            @empty
-                                <div style="padding:12px;color:#94a3b8;font-size:13px;text-align:center;">
-                                    Belum ada role tersedia
-                                </div>
-                            @endforelse
-                        </div>
-                    </div>
-                    @error('role_ids')<small style="color:#ef4444;">{{ $message }}</small>@enderror
-                </div>
-                @endif
 
                 <div class="form-group">
                     <label class="form-label">
@@ -113,7 +104,85 @@
                             <i class="ri-eye-off-line" id="eyeConfirm"></i>
                         </button>
                     </div>
-                </div> 
+                </div>
+
+                @if ($canEditRole)
+                {{-- Role di bawah (sejajar dgn Tambah User); Ketua/Wali picker sebaris dengan Role. --}}
+                <div class="form-group">
+                    <label class="form-label">Role <span class="required">*</span></label>
+                    <div class="role-dropdown-wrap" id="roleWrap">
+                        <div class="role-trigger {{ $errors->has('role_ids') ? 'has-error' : '' }}" id="roleTrigger" onclick="toggleRoleDropdown()">
+                            <span id="roleTriggerText" style="color:#94a3b8;">-- Pilih Role --</span>
+                            <i class="ri-arrow-down-s-line" id="roleArrow" style="font-size:16px;color:#94a3b8;transition:.2s;"></i>
+                        </div>
+                        <div class="role-dropdown-list" id="roleDropdownList">
+                            @forelse ($roles->whereIn('id', $allowedRoleIds) as $role)
+                                <label class="role-option">
+                                    <input type="checkbox" name="role_ids[]" value="{{ $role->id }}"
+                                        class="role-cb"
+                                        style="accent-color:var(--primary);"
+                                        {{ in_array($role->id, old('role_ids', $activeRoles)) ? 'checked' : '' }}
+                                        onchange="updateRoleTrigger()">
+                                    <span class="role-option-name">{{ $role->nama_role }}</span>
+                                    @if($role->keterangan)
+                                        <small class="role-option-desc">{{ $role->keterangan }}</small>
+                                    @endif
+                                </label>
+                            @empty
+                                <div style="padding:12px;color:#94a3b8;font-size:13px;text-align:center;">
+                                    Belum ada role tersedia
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+                    @error('role_ids')<small style="color:#ef4444;">{{ $message }}</small>@enderror
+                </div>
+
+                @php $ketuaOk = ($ketuaInfo['is_siswa'] && $ketuaInfo['has_kelas']); @endphp
+                <div class="form-group" id="ketuaKelasBlock" style="display:none;">
+                    <label class="form-label">Penetapan Ketua Kelas</label>
+                    <div class="account-warning" style="display:flex; align-items:flex-start; gap:8px;
+                        {{ $ketuaOk ? 'background:#f0fdf4; border-color:var(--primary); color:var(--text-main);' : '' }}">
+                        <i class="{{ $ketuaOk ? 'ri-team-line' : 'ri-error-warning-line' }}" style="margin-top:2px;"></i>
+                        <span>
+                            @if (!$ketuaInfo['is_siswa'])
+                                User ini belum terhubung ke data siswa, jadi <strong>tidak bisa</strong> dijadikan Ketua Kelas.
+                            @elseif (!$ketuaInfo['has_kelas'])
+                                Siswa ini belum terdaftar di kelas manapun. Tetapkan kelasnya dulu lewat menu <strong>Data Siswa</strong>.
+                            @else
+                                Akan ditetapkan sebagai <strong>Ketua Kelas {{ $ketuaInfo['nama_kelas'] }}</strong>.
+                                @if ($ketuaInfo['current_ketua_nama'] && !$ketuaInfo['is_current_ketua'])
+                                    <br>Kelas ini sudah punya ketua: <strong>{{ $ketuaInfo['current_ketua_nama'] }}</strong> — Anda akan diminta konfirmasi penggantian saat menyimpan.
+                                @endif
+                            @endif
+                        </span>
+                    </div>
+                </div>
+
+                <div class="form-group" id="waliKelasBlock" style="display:none;">
+                    <label class="form-label">Kelas yang Diampu (Wali Kelas) <span class="required">*</span></label>
+                    @if (!$waliInfo['is_guru'])
+                        <div class="account-warning" style="display:flex; align-items:flex-start; gap:8px;">
+                            <i class="ri-error-warning-line" style="margin-top:2px;"></i>
+                            <span>User ini belum terhubung ke data guru, jadi <strong>tidak bisa</strong> dijadikan Wali Kelas.</span>
+                        </div>
+                    @else
+                        <select name="wali_kelas_id" id="waliKelasSelect" class="form-control">
+                            <option value="">-- Pilih Kelas --</option>
+                            @foreach ($kelasList as $k)
+                                <option value="{{ $k->id }}"
+                                    data-nama="{{ $k->nama_kelas }}"
+                                    data-has-wali="{{ ($k->wali_kelas_id && (int) $k->id !== (int) ($waliInfo['current_kelas_id'] ?? 0)) ? 1 : 0 }}"
+                                    data-current-wali="{{ $k->current_wali_nama ?? '' }}"
+                                    {{ (string) old('wali_kelas_id', $waliInfo['current_kelas_id']) === (string) $k->id ? 'selected' : '' }}>
+                                    {{ $k->nama_kelas }}{{ $k->current_wali_nama ? ' — Wali: '.$k->current_wali_nama : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <small style="color:var(--text-muted);">Kelas yang sudah punya wali akan meminta konfirmasi penggantian.</small>
+                    @endif
+                </div>
+                @endif
 
             </div>
 
@@ -144,6 +213,19 @@
             </div>
         </div>
     @endif
+
+    {{-- Popup konfirmasi ganti Ketua/Wali Kelas (template confirm-overlay app) --}}
+    <div class="confirm-overlay" id="changeConflictModal">
+        <div class="confirm-box">
+            <div class="confirm-icon">!</div>
+            <h3 id="conflictTitle">Ganti?</h3>
+            <p id="conflictText"></p>
+            <div class="confirm-actions">
+                <button type="button" class="btn btn-primary" onclick="confirmChange()">Ya, Ganti</button>
+                <button type="button" class="btn btn-secondary" onclick="closeConflict()">Batal</button>
+            </div>
+        </div>
+    </div>
 
 @endsection
 
@@ -227,24 +309,56 @@
     // tidak akan jalan.
     updateRoleTrigger();
 
-    // Guard: minimal 1 role harus dipilih (hanya jika dropdown role ditampilkan / user adalah Admin)
+    // Cegah submit ganda + validasi role & password sebelum simpan.
     const editForm = document.getElementById('editForm');
-    if (editForm && document.getElementById('roleTrigger')) {
+    let submitting = false;
+    function lockSubmit() {
+        submitting = true;
+        const btn = editForm ? editForm.querySelector('button[type="submit"]') : null;
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ri-loader-4-line"></i> Menyimpan...'; }
+    }
+
+    if (editForm) {
         editForm.addEventListener('submit', function(e) {
-            const checked = document.querySelectorAll('input.role-cb:checked');
+            if (submitting) { e.preventDefault(); return; }
+
+            // Role wajib minimal 1 (hanya bila dropdown role ditampilkan / user Admin).
             const trigger = document.getElementById('roleTrigger');
-            if (checked.length === 0) {
-                e.preventDefault();
-                trigger.classList.add('has-error');
-                trigger.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                alert('Pilih minimal 1 role untuk akun ini.');
+            if (trigger) {
+                const checked = document.querySelectorAll('input.role-cb:checked');
+                if (checked.length === 0) {
+                    e.preventDefault();
+                    trigger.classList.add('has-error');
+                    trigger.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    alert('Pilih minimal 1 role untuk akun ini.');
+                    return;
+                }
             }
+
+            // Password baru opsional; jika diisi wajib min 6 karakter & cocok konfirmasi.
+            const pw  = document.getElementById('password').value;
+            const pwc = document.getElementById('passwordConfirm').value;
+            if (pw.length > 0 && pw.length < 6) {
+                e.preventDefault();
+                document.getElementById('password').focus();
+                alert('Password minimal 6 karakter.');
+                return;
+            }
+            if (pw !== pwc) {
+                e.preventDefault();
+                document.getElementById('passwordConfirm').focus();
+                alert('Konfirmasi password tidak cocok dengan password.');
+                return;
+            }
+
+            lockSubmit();
         });
 
         document.querySelectorAll('input.role-cb').forEach(cb => {
             cb.addEventListener('change', () => {
-                if (document.querySelectorAll('input.role-cb:checked').length > 0) {
-                    document.getElementById('roleTrigger').classList.remove('has-error');
+                const t = document.getElementById('roleTrigger');
+                if (t && document.querySelectorAll('input.role-cb:checked').length > 0) {
+                    t.classList.remove('has-error');
                 }
             });
         });
@@ -257,5 +371,71 @@
             if (e.target === this) window.location.href = "{{ route('admin.index') }}";
         });
     }
+
+    /* ---- Ketua & Wali Kelas: blok kondisional + konfirmasi ganti ---- */
+    const KETUA_ROLE_ID = @json($ketuaRoleId ?? null);
+    const WALI_ROLE_ID  = @json($waliRoleId ?? null);
+    let pendingChange = null; // 'ketua' | 'wali'
+
+    function roleChecked(roleId) {
+        if (!roleId) return false;
+        const cb = document.querySelector('input.role-cb[value="' + roleId + '"]');
+        return cb && cb.checked;
+    }
+    function toggleKetuaBlock() {
+        const block = document.getElementById('ketuaKelasBlock');
+        if (block) block.style.display = roleChecked(KETUA_ROLE_ID) ? 'block' : 'none';
+    }
+    function toggleWaliBlock() {
+        const block = document.getElementById('waliKelasBlock');
+        if (block) block.style.display = roleChecked(WALI_ROLE_ID) ? 'block' : 'none';
+    }
+
+    document.querySelectorAll('input.role-cb').forEach(cb => {
+        cb.addEventListener('change', function () { toggleKetuaBlock(); toggleWaliBlock(); });
+    });
+    toggleKetuaBlock();
+    toggleWaliBlock();
+
+    /* ---- Popup ganti Ketua/Wali ---- */
+    function closeConflict() {
+        document.getElementById('changeConflictModal').classList.remove('show');
+        pendingChange = null;
+    }
+    function confirmChange() {
+        if (submitting) return;
+        if (pendingChange === 'ketua') document.getElementById('confirmChangeKetua').value = '1';
+        if (pendingChange === 'wali')  document.getElementById('confirmChangeWali').value  = '1';
+        lockSubmit();
+        document.getElementById('editForm').submit();
+    }
+    function showConflict(type, title, html) {
+        pendingChange = type;
+        document.getElementById('conflictTitle').textContent = title;
+        document.getElementById('conflictText').innerHTML = html;
+        document.getElementById('changeConflictModal').classList.add('show');
+    }
+    const changeConflictModal = document.getElementById('changeConflictModal');
+    if (changeConflictModal) {
+        changeConflictModal.addEventListener('click', function(e) {
+            if (e.target === this) closeConflict();
+        });
+    }
+    @if (session('ketua_conflict'))
+    (function () {
+        var c = @json(session('ketua_conflict'));
+        showConflict('ketua', 'Ganti Ketua Kelas?',
+            'Kelas <strong>' + c.nama_kelas + '</strong> sudah punya Ketua Kelas (<strong>' +
+            c.current_nama + '</strong>).<br>Ganti dengan <strong>' + c.new_nama + '</strong>?');
+    })();
+    @endif
+    @if (session('wali_conflict'))
+    (function () {
+        var c = @json(session('wali_conflict'));
+        showConflict('wali', 'Ganti Wali Kelas?',
+            'Kelas <strong>' + c.nama_kelas + '</strong> sudah punya Wali Kelas (<strong>' +
+            c.current_nama + '</strong>).<br>Ganti dengan guru ini?');
+    })();
+    @endif
 </script>
 @endpush

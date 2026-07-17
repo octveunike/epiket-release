@@ -153,7 +153,7 @@
                     <th class="col-center">Status</th>
                     <th class="col-center">Waktu Izin</th>
                     <th>Keterangan</th>
-                    <th class="col-center">Sumber</th>
+                    <th class="col-center">Update Terakhir</th>
                     <th class="col-center">Aksi</th>
                 </tr>
             </thead>
@@ -201,7 +201,7 @@ $waktuSehariData = [
 
 $statusMap = [1 => 'I', 2 => 'S', 3 => 'A', 4 => 'D', 5 => 'T'];
 
-$preEntries = $sudahTercatat->map(function ($d) use ($statusMap, $waktuSehariData) {
+$preEntries = $sudahTercatat->map(function ($d) use ($statusMap, $waktuSehariData, $sumberBySiswa) {
     // Hitung waktuDisplay untuk per jam dari relasi jams
     if ($d->is_full_day) {
         $waktuDisplay = $waktuSehariData['mulai'] . ' – ' . $waktuSehariData['selesai'];
@@ -213,6 +213,8 @@ $preEntries = $sudahTercatat->map(function ($d) use ($statusMap, $waktuSehariDat
             ? \Carbon\Carbon::parse($jamAwal->waktu_mulai)->format('H:i') . ' – ' . \Carbon\Carbon::parse($jamAkhir->waktu_selesai)->format('H:i')
             : 'Per Jam';
     }
+
+    $sumber = $sumberBySiswa[(int) $d->siswa_id] ?? ['kind' => 'manual', 'user' => '—'];
 
     return [
         'siswaId'       => $d->siswa_id,
@@ -226,16 +228,21 @@ $preEntries = $sudahTercatat->map(function ($d) use ($statusMap, $waktuSehariDat
         'waktuDisplay'  => $waktuDisplay,
         'keterangan'    => $d->keterangan ?? '',
         'lampiranNama'  => '',
-        'locked'        => true,
+        // Lock only rows auto-created from approved Dispensasi (status_absensi_id = 4 / Dispen).
+        // Manually-entered rows stay editable on re-edit so Ketua Kelas can delete them.
+        'locked'        => (int) $d->status_absensi_id === 4,
+        'sumberKind'    => $sumber['kind'],
+        'sumberUser'    => $sumber['user'],
     ];
 })->values();
 @endphp
 <script>
-const jamData     = {!! json_encode($jamDataArr) !!};
-const waktuSehari = {!! json_encode($waktuSehariData) !!};
-const allSiswa    = {!! json_encode($siswaDataArr) !!};
-let entries       = {!! json_encode($preEntries) !!};
-let curStatus     = '';
+const jamData      = {!! json_encode($jamDataArr) !!};
+const waktuSehari  = {!! json_encode($waktuSehariData) !!};
+const allSiswa     = {!! json_encode($siswaDataArr) !!};
+const currentUser  = {!! json_encode($currentUserNama) !!};
+let entries        = {!! json_encode($preEntries) !!};
+let curStatus      = '';
 
 document.addEventListener('DOMContentLoaded', () => {
     renderEntryList();
@@ -367,6 +374,8 @@ function addEntry() {
         keterangan   : keteranganFinal,
         lampiranNama : document.getElementById('fileEl').files[0]?.name ?? '',
         locked       : false,
+        sumberKind   : 'manual',
+        sumberUser   : currentUser,
     });
 
     cancelAdd();
@@ -456,9 +465,11 @@ function renderEntryList() {
 
         const waktu = `<span style="font-size:12px;color:var(--text-muted);font-weight:600;">${waktuStr}</span>`;
 
-        const sumberCell = e.locked
-            ? `<span style="background:#e0f2fe;color:#075985;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">Auto</span>`
-            : `<span style="background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">Manual</span>`;
+        const sk = e.sumberKind ?? 'manual';
+        const sn = e.sumberUser || '—';
+        const sumberCell = sk === 'dispensasi'
+            ? `<span style="font-size:12px;color:#374151;">Approval by ${sn}</span>`
+            : `<span style="font-size:12px;color:#374151;">${sn}</span>`;
 
         const aksiCell = e.locked
             ? `<span style="color:var(--text-muted);font-size:12px;">—</span>`

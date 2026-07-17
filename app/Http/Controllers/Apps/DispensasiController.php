@@ -117,7 +117,7 @@ class DispensasiController extends Controller
             'periode_akademik_id' => ['required', 'integer'],
             'waktu_mulai'         => ['required', 'date'],
             'waktu_selesai'       => ['required', 'date', 'after_or_equal:waktu_mulai'],
-            'kegiatan'            => ['required', 'string', 'max:255'],
+            'nama_kegiatan'       => ['required', 'string', 'max:255'],
             'lampiran_dispensasi' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
         ]);
 
@@ -135,7 +135,7 @@ class DispensasiController extends Controller
             'periode_akademik_id'  => $request->periode_akademik_id,
             'waktu_mulai'          => $request->waktu_mulai,
             'waktu_selesai'        => $request->waktu_selesai,
-            'kegiatan'             => $request->kegiatan,
+            'nama_kegiatan'        => $request->nama_kegiatan,
             'lampiran_dispensasi'  => $lampiranPath,
             'status_validasi_id' => $statusAwalId,
             'status'               => '1',
@@ -168,7 +168,7 @@ class DispensasiController extends Controller
             'periode_akademik_id' => ['required', 'integer'],
             'waktu_mulai'         => ['required', 'date'],
             'waktu_selesai'       => ['required', 'date', 'after_or_equal:waktu_mulai'],
-            'kegiatan'            => ['required', 'string', 'max:255'],
+            'nama_kegiatan'       => ['required', 'string', 'max:255'],
             'lampiran_dispensasi' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
         ]);
 
@@ -186,7 +186,7 @@ class DispensasiController extends Controller
             'periode_akademik_id' => $request->periode_akademik_id,
             'waktu_mulai'         => $request->waktu_mulai,
             'waktu_selesai'       => $request->waktu_selesai,
-            'kegiatan'            => $request->kegiatan,
+            'nama_kegiatan'       => $request->nama_kegiatan,
             'lampiran_dispensasi' => $lampiranPath,
             'user_update'         => auth()->user()->id,
             'tanggal_update'      => date('Y-m-d H:i:s'),
@@ -370,7 +370,7 @@ class DispensasiController extends Controller
                     [
                         'status_absensi_id' => 4,
                         'is_full_day'       => 1,
-                        'keterangan'        => 'Dispensasi: ' . $dispensasi->kegiatan,
+                        'keterangan'        => 'Dispensasi: ' . $dispensasi->nama_kegiatan,
                         'status'            => '1',
                         'user_input'        => auth()->user()->id,
                         'tanggal_input'     => date('Y-m-d H:i:s'),

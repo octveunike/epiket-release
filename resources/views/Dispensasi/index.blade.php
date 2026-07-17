@@ -71,7 +71,7 @@
             <thead>
                 <tr>
                     <th class="col-no">No</th>
-                    <th>Kegiatan</th>
+                    <th>Nama Kegiatan</th>
                     <th class="col-center">Waktu Mulai</th>
                     <th class="col-center">Waktu Selesai</th>
                     <th class="col-center">Status</th>
@@ -84,7 +84,7 @@
                     <tr>
                         <td class="col-no">{{ $loop->iteration }}</td>
                         <td>
-                            <strong>{{ $d->kegiatan }}</strong>
+                            <strong>{{ $d->nama_kegiatan }}</strong>
                         </td>
                         <td class="col-center">
                             {{ \Carbon\Carbon::parse($d->waktu_mulai)->locale('id')->translatedFormat('d M Y, H:i') }}
@@ -160,7 +160,7 @@
             <thead>
                 <tr>
                     <th class="col-no">No</th>
-                    <th>Kegiatan</th>
+                    <th>Nama Kegiatan</th>
                     <th class="col-center">Waktu Mulai</th>
                     <th class="col-center">Waktu Selesai</th>
                     <th class="col-center">Status</th>
@@ -173,7 +173,7 @@
                     <tr>
                         <td class="col-no">{{ $loop->iteration }}</td>
                         <td>
-                            <strong>{{ $d->kegiatan }}</strong>
+                            <strong>{{ $d->nama_kegiatan }}</strong>
                         </td>
                         <td class="col-center">
                             {{ \Carbon\Carbon::parse($d->waktu_mulai)->locale('id')->translatedFormat('d M Y, H:i') }}

@@ -137,10 +137,12 @@ class LaporanController extends Controller
             }
         }
 
-        // 3. Dispensasi
+        // 3. Dispensasi — hanya yang sudah Disetujui (status_validasi_id = 5) oleh Petugas Piket.
+        // Dispensasi yang belum divalidasi tidak boleh masuk laporan.
         if (!$kategori || $kategori === 'dispensasi') {
             $query = Dispensasi::with(['details.siswa.kelas'])
                 ->where('status', 1)
+                ->where('status_validasi_id', 5)
                 ->whereHas('details', fn($q) => $q->where('status', 1));
 
             if ($dari)   $query->where('waktu_mulai', '>=', $dari);
@@ -166,7 +168,7 @@ class LaporanController extends Controller
                         'nama_siswa'   => $siswa->nama_siswa ?? '—',
                         'kelas'        => $siswa->kelas->nama_kelas ?? '—',
                         'kategori'     => 'Dispensasi',
-                        'deskripsi'    => $disp->kegiatan ?? '—',
+                        'deskripsi'    => $disp->nama_kegiatan ?? '—',
                         'penginput'    => $user->nama ?? 'Auto',
                     ];
                 }

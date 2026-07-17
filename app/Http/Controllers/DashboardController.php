@@ -12,17 +12,31 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->hasRole('Admin')) {
-            return $this->dashboardAdmin($request);
-        } elseif ($user->hasRole('Petugas Piket')) {
-            return $this->dashboardPetugasPiket($request);
-        } elseif ($user->hasRole('Wali Kelas')) {
-            return $this->dashboardWaliKelas($request);
-        } elseif ($user->hasRole('Ketua Kelas')) {
-            return $this->dashboardKetuaKelas($request);
+        // Panel dashboard yang benar-benar bisa dipakai user (urut prioritas).
+        // Sumber tunggal ada di User::dashboardPanels().
+        $panels = $user->dashboardPanels();
+
+        if (empty($panels)) {
+            return redirect()->route('login')->with('error', 'Akun Anda belum memiliki role. Hubungi Admin.');
         }
 
-        return redirect()->route('login')->with('error', 'Akun Anda belum memiliki role. Hubungi Admin.');
+        // Panel aktif dari ?panel=, hanya jika user memang punya role tsb.
+        // Kalau tidak valid, pakai panel prioritas tertinggi.
+        $activePanel = $request->get('panel');
+        if (!is_string($activePanel) || !isset($panels[$activePanel])) {
+            $activePanel = array_key_first($panels);
+        }
+
+        // Bagikan ke semua view dashboard untuk merender panel switcher.
+        view()->share('panels', $panels);
+        view()->share('activePanel', $activePanel);
+
+        return match ($activePanel) {
+            'admin' => $this->dashboardAdmin($request),
+            'piket' => $this->dashboardPetugasPiket($request),
+            'wali'  => $this->dashboardWaliKelas($request),
+            'ketua' => $this->dashboardKetuaKelas($request),
+        };
     }
 
     // =========================================================
@@ -32,11 +46,6 @@ class DashboardController extends Controller
     {
         $user  = auth()->user();
         $today = Carbon::today();
-        $view  = $request->get('view', 'admin');
-
-        if ($view === 'piket') return $this->dashboardPetugasPiket($request, true);
-        if ($view === 'wali')  return $this->dashboardWaliKelas($request, true);
-        if ($view === 'ketua') return $this->dashboardKetuaKelas($request, true);
 
         $periodeAktif = DB::table('periode_akademik')
             ->where('status', 1)->orderByDesc('id')->first();
@@ -78,8 +87,9 @@ class DashboardController extends Controller
         $totalTerlambat = DB::table('keterlambatan')
             ->whereDate('waktu_masuk', $today)->where('status', 1)->count();
 
+        // Dispensasi pending: status 1 (Menunggu Pengisian) atau 6 (Perlu Revisi)
         $dispensasiPending   = DB::table('dispensasi')
-            ->where('status_validasi_id', 1)->where('status', 1)->count();
+            ->whereIn('status_validasi_id', [1, 6])->where('status', 1)->count();
 
         $absensiMenungguWali = DB::table('absensi')
             ->where('status_validasi_id', 3)->where('status', 1)->count();
@@ -120,14 +130,14 @@ class DashboardController extends Controller
             'totalTerlambat', 'dispensasiPending', 'absensiMenungguWali',
             'totalTamuHariIni', 'daftarTamu', 'keterlambatanTerbaru',
             'dispensasiTerbaru',
-            'daftarKelas', 'view'
+            'daftarKelas'
         ));
     }
 
     // =========================================================
     // PETUGAS PIKET
     // =========================================================
-    private function dashboardPetugasPiket(Request $request, bool $asAdmin = false)
+    private function dashboardPetugasPiket(Request $request)
     {
         $user  = auth()->user();
         $today = Carbon::today();
@@ -185,42 +195,32 @@ class DashboardController extends Controller
             ->orderByDesc('id')
             ->limit(5)->get();
 
-        $viewMode = $asAdmin ? 'piket' : null;
-
         return view('dashboard.petugas_piket', compact(
             'user', 'periodeAktif',
             'totalKelas', 'kelasUdahAbsen', 'kelasBelumAbsen',
             'totalIzin', 'totalSakit', 'totalAlpha', 'totalDispen',
             'keterlambatanHariIni', 'totalTerlambat',
-            'dispensasiMenunggu', 'daftarTamu', 'viewMode'
+            'dispensasiMenunggu', 'daftarTamu'
         ));
     }
 
     // =========================================================
     // WALI KELAS
     // =========================================================
-    private function dashboardWaliKelas(Request $request, bool $asAdmin = false)
+    private function dashboardWaliKelas(Request $request)
     {
         $user  = auth()->user();
         $today = Carbon::today();
 
-        if ($asAdmin) {
-            $kelasId = $request->get('kelas_id');
-            $kelas   = $kelasId
-                ? DB::table('kelas')->where('id', $kelasId)->where('status', 1)->first()
-                : null;
-        } else {
-            $guru  = DB::table('guru')->where('user_id', $user->id)->where('status', 1)->first();
-            $kelas = $guru
-                ? DB::table('kelas')->where('wali_kelas_id', $guru->id)->where('status', 1)->first()
-                : null;
-        }
+        $guru  = DB::table('guru')->where('user_id', $user->id)->where('status', 1)->first();
+        $kelas = $guru
+            ? DB::table('kelas')->where('wali_kelas_id', $guru->id)->where('status', 1)->first()
+            : null;
 
         $daftarKelas = DB::table('kelas')->where('status', 1)->orderBy('nama_kelas')->get();
-        $viewMode    = $asAdmin ? 'wali' : null;
 
         if (!$kelas) {
-            return view('dashboard.wali_kelas', compact('user', 'kelas', 'daftarKelas', 'viewMode'));
+            return view('dashboard.wali_kelas', compact('user', 'kelas', 'daftarKelas'));
         }
 
         $periodeAktif = DB::table('periode_akademik')
@@ -288,7 +288,7 @@ class DashboardController extends Controller
             ->select('d.*')->distinct()->get();
 
         return view('dashboard.wali_kelas', compact(
-            'user', 'kelas', 'daftarKelas', 'periodeAktif', 'viewMode',
+            'user', 'kelas', 'daftarKelas', 'periodeAktif',
             'totalSiswa', 'totalHadir', 'totalIzin', 'totalSakit', 'totalAlpha', 'totalDispen',
             'absensiHariIni', 'absensiMenungguValidasi',
             'laporanAll',
@@ -299,29 +299,21 @@ class DashboardController extends Controller
     // =========================================================
     // KETUA KELAS
     // =========================================================
-    private function dashboardKetuaKelas(Request $request, bool $asAdmin = false)
+    private function dashboardKetuaKelas(Request $request)
     {
         $user  = auth()->user();
         $today = Carbon::today();
 
-        if ($asAdmin) {
-            $kelasId = $request->get('kelas_id');
-            $kelas   = $kelasId
-                ? DB::table('kelas')->where('id', $kelasId)->where('status', 1)->first()
-                : null;
-        } else {
-            $kelas = DB::table('kelas')
-                ->join('siswa as s', 's.id', '=', 'kelas.ketua_kelas_id')
-                ->where('kelas.status', 1)->where('s.status', 1)
-                ->where('s.user_id', $user->id)
-                ->select('kelas.*')->first();
-        }
+        $kelas = DB::table('kelas')
+            ->join('siswa as s', 's.id', '=', 'kelas.ketua_kelas_id')
+            ->where('kelas.status', 1)->where('s.status', 1)
+            ->where('s.user_id', $user->id)
+            ->select('kelas.*')->first();
 
         $daftarKelas = DB::table('kelas')->where('status', 1)->orderBy('nama_kelas')->get();
-        $viewMode    = $asAdmin ? 'ketua' : null;
 
         if (!$kelas) {
-            return view('dashboard.ketua_kelas', compact('user', 'kelas', 'daftarKelas', 'viewMode'));
+            return view('dashboard.ketua_kelas', compact('user', 'kelas', 'daftarKelas'));
         }
 
         $periodeAktif = DB::table('periode_akademik')
@@ -354,11 +346,11 @@ class DashboardController extends Controller
         $totalAlpha  = $rekap->get(3, 0);
         $totalDispen = $rekap->get(4, 0);
 
-        // Absensi yang perlu diisi (status_validasi_id = 1 = Menunggu Pengisian)
+        // Absensi yang perlu diisi: status 1 (Menunggu Pengisian) atau 6 (Perlu Revisi)
         $absensiPerluDiisi = DB::table('absensi as a')
             ->join('status_validasi as sv', 'sv.id', '=', 'a.status_validasi_id')
             ->where('a.kelas_id', $kelas->id)
-            ->where('a.status_validasi_id', 1)
+            ->whereIn('a.status_validasi_id', [1, 6])
             ->where('a.status', 1)
             ->select('a.*', 'sv.nama_status as nama_verifikasi')
             ->orderByDesc('a.tanggal')->get();
@@ -382,7 +374,7 @@ class DashboardController extends Controller
         }
 
         return view('dashboard.ketua_kelas', compact(
-            'user', 'kelas', 'daftarKelas', 'periodeAktif', 'viewMode',
+            'user', 'kelas', 'daftarKelas', 'periodeAktif',
             'totalSiswa', 'totalHadir', 'totalIzin', 'totalSakit', 'totalAlpha', 'totalDispen',
             'absensiHariIni', 'statusVerifHariIni', 'absensiPerluDiisi',
             'riwayatAbsensi', 'siswaAbsen'

@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('organisasi_id')->nullable()->constrained('organisasi')->nullOnDelete();
             $table->dateTime('waktu_mulai')->nullable();
             $table->dateTime('waktu_selesai')->nullable();
-            $table->string('kegiatan')->nullable();
+            $table->string('nama_kegiatan')->nullable();
             $table->string('lampiran_dispensasi')->nullable();
             $table->foreignId('status_validasi_id')->nullable()->constrained('status_validasi')->nullOnDelete();
             $table->foreignId('periode_akademik_id')->nullable()->constrained('periode_akademik')->nullOnDelete();

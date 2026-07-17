@@ -102,10 +102,14 @@
                             @error('siswa_id')<small style="color:#ef4444;">{{ $message }}</small>@enderror
                         </div>
 
-                        <div class="form-group" style="margin-bottom:0;flex:0 0 140px;">
+                        <div class="form-group" style="margin-bottom:0;flex:0 0 150px;">
                             <label class="form-label">Waktu Masuk <span class="required">*</span></label>
-                            <input type="time" name="waktu_masuk" id="waktu-masuk-input" class="form-control"
-                                value="{{ old('waktu_masuk') }}" required>
+                            @include('partials.timepick', [
+                                'name'    => 'waktu_masuk',
+                                'value'   => old('waktu_masuk'),
+                                'max'     => '12:00',
+                                'default' => '06:30',
+                            ])
                             @error('waktu_masuk')<small style="color:#ef4444;">{{ $message }}</small>@enderror
                         </div>
 
@@ -199,25 +203,13 @@
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var timeInput = document.getElementById('waktu-masuk-input');
-    if (timeInput && !timeInput.value) {
-        var now = new Date();
-        var h = String(now.getHours()).padStart(2, '0');
-        var m = String(now.getMinutes()).padStart(2, '0');
-        timeInput.value = h + ':' + m;
-    }
-});
-
+// Catatan: logika time picker (#timepick) ada di /public/js/app.js
 function showDeleteModal(id) {
     document.getElementById('delete-form').action = "{{ route('Keterlambatan.destroy', '') }}/" + id;
     document.getElementById('deleteModal').classList.add('show');
 }
-function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.remove('show');
-}
 const dm = document.getElementById('deleteModal');
-if (dm) dm.addEventListener('click', function(e) {
+if (dm) dm.addEventListener('click', function (e) {
     if (e.target === this) closeDeleteModal();
 });
 </script>

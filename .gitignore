@@ -35,17 +35,12 @@ yarn-error.log
 /.idea
 /.vscode
 
-# Playwright
-
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-/playwright/.auth/
-
 # Misc
 
 .DS_Store
 Thumbs.db
 .cache
 *.stackdump
+
+# Dokumen pribadi / skripsi (jangan di-publish)
+/File

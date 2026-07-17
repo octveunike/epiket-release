@@ -150,6 +150,22 @@
         </div>
         @endif
 
+        @if(auth()->user()->hasRole('Admin'))
+        <div class="sidebar-group active">
+            <div class="sidebar-group-header sidebar-group-label">
+                <span>SISTEM</span>
+                <i class="ri-arrow-down-s-line dropdown-icon"></i>
+            </div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="{{ route('ResetData.index') }}" class="{{ request()->routeIs('ResetData.*') ? 'active' : '' }}">
+                        <i class="ri-refresh-line"></i><span>Reset Data</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        @endif
+
     </div>
 </div>
 

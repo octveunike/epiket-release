@@ -196,7 +196,7 @@
                     @foreach($dispensasiMenunggu as $i => $d)
                     <tr>
                         <td class="col-no">{{ $i + 1 }}</td>
-                        <td>{{ $d->kegiatan }}</td>
+                        <td>{{ $d->nama_kegiatan }}</td>
                         <td>{{ $d->nama_organisasi ?? '—' }}</td>
                         <td class="col-center">{{ \Carbon\Carbon::parse($d->waktu_mulai)->format('d M Y') }}</td>
                         <td class="col-center">{{ \Carbon\Carbon::parse($d->waktu_selesai)->format('d M Y') }}</td>

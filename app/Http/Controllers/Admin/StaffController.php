@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Admin\Staff;
 use App\Models\User;
 use App\Imports\StaffImport;
+use App\Exports\StaffExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -119,6 +120,17 @@ class StaffController extends Controller
     /**
      * Import data staff dari file Excel.
      */
+    /**
+     * Unduh seluruh data staf aktif sebagai Excel (format sama dengan template import).
+     */
+    public function export()
+    {
+        if (!auth()->user()->hasRole('Admin')) {
+            abort(403);
+        }
+        return Excel::download(new StaffExport, 'Data_Staf_' . now()->format('Ymd_His') . '.xlsx');
+    }
+
     public function import(Request $request)
     {
         $request->validate([

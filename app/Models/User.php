@@ -86,6 +86,30 @@ class User extends Authenticatable
         return $this->roles->whereIn('nama_role', $roles)->isNotEmpty();
     }
 
+    /**
+     * Sumber tunggal: panel/peran dashboard yang benar-benar aktif & bisa
+     * dipakai user, urut prioritas. Dipakai oleh dashboard panel switcher
+     * dan tampilan peran di header supaya keduanya konsisten.
+     *
+     *   - Admin / Petugas Piket : dari pivot user_role (hanya status = 1)
+     *   - Wali / Ketua Kelas    : di-derive dari data (harus benar-benar
+     *                             menjadi wali/ketua sebuah kelas aktif)
+     *
+     * Peran yang sudah dihapus / status 0 otomatis tidak ikut muncul.
+     *
+     * @return array<string,string>  [key => label], mis. ['wali' => 'Wali Kelas']
+     */
+    public function dashboardPanels(): array
+    {
+        $panels = [];
+        if ($this->hasRole('Admin'))         $panels['admin'] = 'Admin';
+        if ($this->hasRole('Petugas Piket')) $panels['piket'] = 'Petugas Piket';
+        if ($this->waliKelas())              $panels['wali']  = 'Wali Kelas';
+        if ($this->ketuaKelas())             $panels['ketua'] = 'Ketua Kelas';
+
+        return $panels;
+    }
+
     public function siswa()
     {
         return $this->hasOne(\App\Models\Admin\Siswa::class, 'user_id', 'id');

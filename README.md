@@ -1,66 +1,143 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# EPIKET
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+**EPIKET** (e-Piket) is a web-based student attendance and piket (duty)
+management system built for school use. It supports daily class attendance,
+dispensation records, guest logs, tardiness records, and role-based dashboards
+for administrators, piket officers, and homeroom teachers.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Application Information
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+| Item                | Detail                                   |
+| ------------------- | ---------------------------------------- |
+| **Application Name** | EPIKET (e-Piket)                        |
+| **Version**          | 1.0.0                                   |
+| **Last Author**      | Eunike Octavia                          |
+| **Year**             | 2026                                    |
+| **Framework**        | Laravel 10 (`^10.10`)                   |
+| **PHP Version**      | PHP 8.1 or higher (developed on PHP 8.2)|
+| **Database**         | MySQL                                   |
+| **Frontend Build**   | Vite                                    |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Fitur Aplikasi
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Berikut daftar fitur utama yang tersedia pada aplikasi **EPIKET**:
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- **Autentikasi & Hak Akses Berbasis Peran** — login pengguna dengan pembagian hak akses untuk 4 peran: **Admin**, **Petugas Piket**, **Wali Kelas**, dan **Ketua Kelas**.
+- **Dashboard per Peran** — tampilan ringkasan yang berbeda dan sesuai kebutuhan tiap peran (rekap absensi harian, kelas yang belum absen, dispensasi menunggu, keterlambatan, dsb.).
+- **Manajemen Absensi** — input absensi harian oleh Ketua Kelas, pengisian detail per siswa (Hadir/Izin/Sakit/Alpha), serta **validasi berjenjang** oleh Wali Kelas / Petugas Piket, lengkap dengan riwayat validasi.
+- **Manajemen Dispensasi** — pengajuan dispensasi kegiatan, penambahan siswa peserta, alur **ajukan → verifikasi → revisi**, dan pemantauan status.
+- **Pencatatan Keterlambatan** — pencatatan siswa yang terlambat beserta alasannya.
+- **Buku Tamu (Daftar Tamu)** — pencatatan kunjungan tamu sekolah beserta **ekspor data**.
+- **Manajemen Kelas** — pengelolaan data kelas beserta wali kelas dan ketua kelas.
+- **Periode Akademik** — pengelolaan tahun ajaran / periode akademik aktif.
+- **Manajemen Guru** — data guru dengan dukungan **impor dari Excel**.
+- **Manajemen Siswa** — data siswa dengan dukungan **impor dari Excel**.
+- **Manajemen Staff** — data staff dengan dukungan **impor dari Excel**.
+- **Manajemen Organisasi** — data organisasi beserta anggota, dengan dukungan **impor dari Excel**.
+- **Laporan** — rekap laporan absensi & keterlambatan dengan dukungan **ekspor ke Excel**.
+- **Manajemen Pengguna** — pengelolaan akun pengguna beserta penetapan peran.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## Kebutuhan Sistem
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Pastikan perangkat lunak berikut sudah terpasang sebelum instalasi:
 
-### Premium Partners
+- PHP 8.1 atau lebih baru
+- Composer
+- MySQL
+- Node.js & npm
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+---
 
-## Contributing
+## Cara Menjalankan Aplikasi
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 1. Instal dependency PHP
 
-## Code of Conduct
+```bash
+composer install
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 2. Instal dependency frontend
 
-## Security Vulnerabilities
+```bash
+npm install
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 3. Salin file environment
 
-## License
+```bash
+cp .env.example .env
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### 4. Generate application key
+
+```bash
+php artisan key:generate
+```
+
+### 5. Konfigurasi database
+
+Buat database MySQL (misalnya `db_epiket`), lalu sesuaikan pengaturan database
+pada file `.env`:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=db_epiket
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+### 6. Siapkan database
+
+Jalankan migrasi dan seeder untuk membuat struktur tabel serta data dasar
+(role, akun bawaan, kelas, status absensi, periode akademik, dll.):
+
+```bash
+php artisan migrate
+php artisan db:seed
+```
+
+**Opsional — muat data contoh.** Untuk mengisi aplikasi dengan data dummy
+sebagai bahan uji coba atau demonstrasi, impor file SQL berikut *setelah*
+menjalankan migrasi dan seeder di atas:
+
+```bash
+mysql -u root -p db_epiket < database/dummies.sql
+```
+
+### 7. Build aset frontend
+
+Untuk produksi:
+
+```bash
+npm run build
+```
+
+Atau saat pengembangan (dengan hot reloading):
+
+```bash
+npm run dev
+```
+
+### 8. Jalankan aplikasi
+
+```bash
+php artisan serve
+```
+
+Aplikasi akan berjalan di **http://localhost:8000**.
+
+---
+
+## Login Default
+
+Setelah seeding, akun bawaan yang tersedia adalah **admin / admin**.
+Silakan ganti kredensial default sebelum aplikasi digunakan pada lingkungan
+sebenarnya.

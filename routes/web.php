@@ -107,6 +107,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/guru',         [App\Http\Controllers\Admin\GuruController::class, 'index'])->name('Guru.index');
     Route::get('/guru/add',     [App\Http\Controllers\Admin\GuruController::class, 'create'])->name('Guru.create');
     Route::post('/guru/add',    [App\Http\Controllers\Admin\GuruController::class, 'store'])->name('Guru.store');
+    Route::get('/guru/export',  [App\Http\Controllers\Admin\GuruController::class, 'export'])->name('Guru.export');
     Route::get('/guru/{id}',    [App\Http\Controllers\Admin\GuruController::class, 'edit'])->name('Guru.edit');
     Route::put('/guru/{id}',    [App\Http\Controllers\Admin\GuruController::class, 'update'])->name('Guru.update');
     Route::delete('/guru/{id}', [App\Http\Controllers\Admin\GuruController::class, 'destroy'])->name('Guru.destroy');
@@ -116,6 +117,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/siswa',         [App\Http\Controllers\Admin\SiswaController::class, 'index'])->name('Siswa.index');
     Route::get('/siswa/add',     [App\Http\Controllers\Admin\SiswaController::class, 'create'])->name('Siswa.create');
     Route::post('/siswa/add',    [App\Http\Controllers\Admin\SiswaController::class, 'store'])->name('Siswa.store');
+    Route::get('/siswa/export',  [App\Http\Controllers\Admin\SiswaController::class, 'export'])->name('Siswa.export');
     Route::get('/siswa/{id}',    [App\Http\Controllers\Admin\SiswaController::class, 'edit'])->name('Siswa.edit');
     Route::put('/siswa/{id}',    [App\Http\Controllers\Admin\SiswaController::class, 'update'])->name('Siswa.update');
     Route::delete('/siswa/{id}', [App\Http\Controllers\Admin\SiswaController::class, 'destroy'])->name('Siswa.destroy');
@@ -134,17 +136,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/staff',              [App\Http\Controllers\Admin\StaffController::class, 'index'])->name('Staff.index');
     Route::get('/staff/add',          [App\Http\Controllers\Admin\StaffController::class, 'create'])->name('Staff.create');
     Route::post('/staff/add',         [App\Http\Controllers\Admin\StaffController::class, 'store'])->name('Staff.store');
+    Route::get('/staff/export',       [App\Http\Controllers\Admin\StaffController::class, 'export'])->name('Staff.export');
     Route::get('/staff/{id}/edit',    [App\Http\Controllers\Admin\StaffController::class, 'edit'])->name('Staff.edit');
     Route::put('/staff/{id}',         [App\Http\Controllers\Admin\StaffController::class, 'update'])->name('Staff.update');
     Route::delete('/staff/{id}',      [App\Http\Controllers\Admin\StaffController::class, 'destroy'])->name('Staff.destroy');
 
-    // Kegiatan
-    Route::get('/kegiatan',       [App\Http\Controllers\Admin\KegiatanController::class, 'index'])->name('Kegiatan.index');
-    Route::get('/kegiatan/add',   [App\Http\Controllers\Admin\KegiatanController::class, 'create'])->name('Kegiatan.create');
-    Route::post('/kegiatan/add',  [App\Http\Controllers\Admin\KegiatanController::class, 'store'])->name('Kegiatan.store');
-    Route::get('/kegiatan/{id}',  [App\Http\Controllers\Admin\KegiatanController::class, 'edit'])->name('Kegiatan.edit');
-    Route::post('/kegiatan/{id}', [App\Http\Controllers\Admin\KegiatanController::class, 'update'])->name('Kegiatan.update');
-    Route::put('/kegiatan/{id}',  [App\Http\Controllers\Admin\KegiatanController::class, 'destroy'])->name('Kegiatan.destroy');
+    // Reset Data (Admin) — kembalikan aplikasi ke kondisi awal (migrate:fresh --seed)
+    Route::get('/reset-data',  [App\Http\Controllers\Admin\ResetDataController::class, 'index'])->name('ResetData.index');
+    Route::post('/reset-data', [App\Http\Controllers\Admin\ResetDataController::class, 'reset'])->name('ResetData.reset');
 
     // User Management
     Route::get('/user-management',           [App\Http\Controllers\UserManagement\UserManagementController::class, 'index'])->name('UserManagement.index');

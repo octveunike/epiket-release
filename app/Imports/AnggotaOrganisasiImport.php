@@ -32,7 +32,7 @@ class AnggotaOrganisasiImport implements ToCollection, WithHeadingRow
         }
 
         // Header bisa "Nama Anggota" atau "Nama Siswa" (slug: nama_anggota / nama_siswa)
-        $available = array_keys((array) $rows->first());
+        $available = array_keys($rows->first()->toArray());
         if (!in_array('nama_anggota', $available, true) && !in_array('nama_siswa', $available, true)) {
             $this->errors[] = 'Format file tidak sesuai template. Kolom wajib tidak ditemukan: Nama Anggota (atau Nama Siswa). Pastikan menggunakan template yang benar.';
             return;

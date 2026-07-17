@@ -638,7 +638,7 @@ INSERT INTO keterlambatan (absensi_id, siswa_id, waktu_masuk, alasan, periode_ak
 -- ================================================================
 -- 13. DISPENSASI  (3 rows — OSIS / Pramuka / PMR, status Disetujui)
 -- ================================================================
-INSERT INTO dispensasi (id, organisasi_id, waktu_mulai, waktu_selesai, kegiatan, lampiran_dispensasi, status_validasi_id, periode_akademik_id, status, user_input, tanggal_input, created_at, updated_at) VALUES
+INSERT INTO dispensasi (id, organisasi_id, waktu_mulai, waktu_selesai, nama_kegiatan, lampiran_dispensasi, status_validasi_id, periode_akademik_id, status, user_input, tanggal_input, created_at, updated_at) VALUES
 (1, 1, '2026-05-10 08:00:00', '2026-05-10 12:00:00', 'Rapat OSIS bulanan',     NULL, 5, 2, 1, @actor, '2026-05-09 14:00:00', '2026-05-09 14:00:00', '2026-05-09 14:00:00'),
 (2, 2, '2026-05-11 07:00:00', '2026-05-11 17:00:00', 'Kemah persiapan jambore',NULL, 5, 2, 1, @actor, '2026-05-09 14:00:00', '2026-05-09 14:00:00', '2026-05-09 14:00:00'),
 (3, 3, '2026-05-12 09:00:00', '2026-05-12 14:00:00', 'Pelatihan P3K',          NULL, 5, 2, 1, @actor, '2026-05-09 14:00:00', '2026-05-09 14:00:00', '2026-05-09 14:00:00');

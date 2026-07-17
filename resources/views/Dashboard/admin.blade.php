@@ -15,25 +15,6 @@
             @endif
         </div>
     </div>
-    {{-- View Switcher --}}
-    <div style="display:flex; gap:6px; flex-wrap:wrap;">
-        <a href="{{ route('admin.index') }}"
-           class="btn btn-sm {{ request('view','admin')==='admin' ? 'btn-primary' : 'btn-secondary' }}">
-            <i class="ri-layout-grid-line"></i> Admin
-        </a>
-        <a href="{{ route('admin.index', ['view'=>'piket']) }}"
-           class="btn btn-sm {{ request('view')==='piket' ? 'btn-primary' : 'btn-secondary' }}">
-            <i class="ri-user-2-line"></i> Piket
-        </a>
-        <a href="{{ route('admin.index', ['view'=>'wali','kelas_id'=>request('kelas_id')]) }}"
-           class="btn btn-sm {{ request('view')==='wali' ? 'btn-primary' : 'btn-secondary' }}">
-            <i class="ri-group-line"></i> Wali Kelas
-        </a>
-        <a href="{{ route('admin.index', ['view'=>'ketua','kelas_id'=>request('kelas_id')]) }}"
-           class="btn btn-sm {{ request('view')==='ketua' ? 'btn-primary' : 'btn-secondary' }}">
-            <i class="ri-user-star-line"></i> Ketua Kelas
-        </a>
-    </div>
 </div>
 
 {{-- ===== STAT GRID ===== --}}
@@ -197,7 +178,7 @@
                         @foreach($dispensasiTerbaru->take(3) as $i => $d)
                         <tr>
                             <td class="col-no">{{ $i + 1 }}</td>
-                            <td>{{ $d->kegiatan }}</td>
+                            <td>{{ $d->nama_kegiatan }}</td>
                             <td>{{ $d->nama_organisasi ?? '—' }}</td>
                             <td class="col-center">{{ \Carbon\Carbon::parse($d->waktu_mulai)->format('d M Y') }}</td>
                             <td class="col-center">{{ \Carbon\Carbon::parse($d->waktu_selesai)->format('d M Y') }}</td>

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Admin\Guru;
 use App\Models\User;
 use App\Imports\GuruImport;
+use App\Exports\GuruExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -137,6 +138,17 @@ class GuruController extends Controller
     /**
      * Import data guru dari file Excel.
      */
+    /**
+     * Unduh seluruh data guru aktif sebagai Excel (format sama dengan template import).
+     */
+    public function export()
+    {
+        if (!auth()->user()->hasRole('Admin')) {
+            abort(403);
+        }
+        return Excel::download(new GuruExport, 'Data_Guru_' . now()->format('Ymd_His') . '.xlsx');
+    }
+
     public function import(Request $request)
     {
         $request->validate([

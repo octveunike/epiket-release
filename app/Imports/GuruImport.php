@@ -23,7 +23,7 @@ class GuruImport implements ToCollection, WithHeadingRow
         }
 
         // Cek header wajib (kalau user salah upload file / template)
-        $available = array_keys((array) $rows->first());
+        $available = array_keys($rows->first()->toArray());
         $missing   = array_diff(['nip', 'nama_guru'], $available);
         if (!empty($missing)) {
             $this->errors[] = 'Format file tidak sesuai template. Kolom wajib tidak ditemukan: '

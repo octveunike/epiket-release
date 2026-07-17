@@ -96,14 +96,16 @@
 
                         <td style="text-align:center; white-space:nowrap;">
                             <a href="{{ route('DaftarTamu.edit', $val->id) }}" class="btn btn-sm btn-primary">
-                                <i class="ri-edit-2-line"></i> Edit
+                                <i class="ri-edit-2-line"></i> Edit Detail
                             </a>
 
-                            <button type="button"
-                                    class="btn btn-sm btn-danger"
-                                    onclick="showDeleteModal({{ $val->id }})">
-                                <i class="ri-delete-bin-line"></i> Hapus
-                            </button>
+                            @if (auth()->user()->hasRole('Admin'))
+                                <button type="button"
+                                        class="btn btn-sm btn-danger"
+                                        onclick="showDeleteModal({{ $val->id }})">
+                                    <i class="ri-delete-bin-line"></i> Hapus
+                                </button>
+                            @endif
                         </td>
                         <td>{{ $val->userUpdate->nama ?? $val->userInput->nama ?? 'Auto' }}</td>
                     </tr>

@@ -27,10 +27,10 @@
 
             <div class="form-group form-full">
                 <label class="form-label">Nama Kegiatan <span class="required">*</span></label>
-                <input type="text" name="kegiatan" class="form-control"
+                <input type="text" name="nama_kegiatan" class="form-control"
                     placeholder="Mis: Pembuatan KTP / Lomba Paskibra"
-                    value="{{ old('kegiatan') }}" required>
-                @error('kegiatan')<small style="color:#ef4444;">{{ $message }}</small>@enderror
+                    value="{{ old('nama_kegiatan') }}" required>
+                @error('nama_kegiatan')<small style="color:#ef4444;">{{ $message }}</small>@enderror
             </div>
 
             <div class="form-group">
@@ -65,17 +65,32 @@
                 @error('periode_akademik_id')<small style="color:#ef4444;">{{ $message }}</small>@enderror
             </div>
 
+            @php
+                $wmOld = old('waktu_mulai');
+                $wsOld = old('waktu_selesai');
+            @endphp
+
             <div class="form-group">
                 <label class="form-label">Waktu Mulai <span class="required">*</span></label>
-                <input type="datetime-local" name="waktu_mulai" class="form-control"
-                    value="{{ old('waktu_mulai') }}" required>
+                @include('partials.datetimepick', [
+                    'name'    => 'waktu_mulai',
+                    'date'    => $wmOld ? \Carbon\Carbon::parse($wmOld)->format('Y-m-d') : now()->format('Y-m-d'),
+                    'time'    => $wmOld ? \Carbon\Carbon::parse($wmOld)->format('H:i') : '',
+                    'max'     => '15:00',
+                    'default' => '06:30',
+                ])
                 @error('waktu_mulai')<small style="color:#ef4444;">{{ $message }}</small>@enderror
             </div>
 
             <div class="form-group">
                 <label class="form-label">Waktu Selesai <span class="required">*</span></label>
-                <input type="datetime-local" name="waktu_selesai" class="form-control"
-                    value="{{ old('waktu_selesai') }}" required>
+                @include('partials.datetimepick', [
+                    'name'    => 'waktu_selesai',
+                    'date'    => $wsOld ? \Carbon\Carbon::parse($wsOld)->format('Y-m-d') : now()->format('Y-m-d'),
+                    'time'    => $wsOld ? \Carbon\Carbon::parse($wsOld)->format('H:i') : '',
+                    'max'     => '15:00',
+                    'default' => '06:30',
+                ])
                 @error('waktu_selesai')<small style="color:#ef4444;">{{ $message }}</small>@enderror
             </div>
 

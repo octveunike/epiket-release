@@ -37,7 +37,7 @@
     <div class="ab-info-grid">
         <div>
             <div class="ab-info-label">Kegiatan</div>
-            <div class="ab-info-value-sm">{{ $dispensasi->kegiatan }}</div>
+            <div class="ab-info-value-sm">{{ $dispensasi->nama_kegiatan }}</div>
         </div>
         <div>
             <div class="ab-info-label">Organisasi</div>

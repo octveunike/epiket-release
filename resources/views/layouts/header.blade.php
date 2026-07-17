@@ -22,7 +22,7 @@
                         {{ auth()->user()->nama }}
                     </span>
                     <span style="font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
-                        <span>{{ auth()->user()->roles->pluck('nama_role')->join(', ') }}</span>
+                        <span>{{ implode(', ', auth()->user()->dashboardPanels()) }}</span>
                         @php
                             $namaKelasAvatar = null;
                             $uId = auth()->user()->id;

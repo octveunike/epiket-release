@@ -12,32 +12,12 @@
             {{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}
         </div>
     </div>
-    @if($viewMode === 'wali' || !isset($kelas) || !$kelas)
-    <form method="GET" action="{{ route('admin.index') }}" class="dash-filter-form">
-        <input type="hidden" name="view" value="wali">
-        <select name="kelas_id" class="form-control">
-            <option value="">-- Pilih Kelas --</option>
-            @foreach($daftarKelas as $k)
-                <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
-                    {{ $k->nama_kelas }}
-                </option>
-            @endforeach
-        </select>
-        <button type="submit" class="btn btn-primary btn-sm">
-            <i class="ri-search-line"></i> Tampilkan
-        </button>
-    </form>
-    @endif
 </div>
 
 @if(!isset($kelas) || !$kelas)
     <div class="empty-state dash-empty-large">
         <i class="ri-building-4-line"></i>
-        <p>
-            @if($viewMode === 'wali') Pilih kelas di atas untuk melihat dashboard
-            @else Kelas Anda belum terdaftar. Hubungi Admin.
-            @endif
-        </p>
+        <p>Kelas Anda belum terdaftar. Hubungi Admin.</p>
     </div>
 @else
 
@@ -208,7 +188,7 @@
             <tbody>
                 @foreach($dispensasiAktif as $d)
                 <tr>
-                    <td>{{ $d->kegiatan }}</td>
+                    <td>{{ $d->nama_kegiatan }}</td>
                     <td class="col-center">{{ \Carbon\Carbon::parse($d->waktu_mulai)->format('d M Y H:i') }}</td>
                     <td class="col-center">{{ \Carbon\Carbon::parse($d->waktu_selesai)->format('d M Y H:i') }}</td>
                     <td class="col-center">

@@ -24,6 +24,7 @@
         @include('layouts.header')
 
         <main class="content">
+            @include('Dashboard._panel_switcher')
             @yield('content')
         </main>
 

@@ -25,7 +25,7 @@ class SiswaImport implements ToCollection, WithHeadingRow
             return;
         }
 
-        $available = array_keys((array) $rows->first());
+        $available = array_keys($rows->first()->toArray());
         $missing   = array_diff(['nis', 'nama_siswa', 'kelas'], $available);
         if (!empty($missing)) {
             $this->errors[] = 'Format file tidak sesuai template. Kolom wajib tidak ditemukan: '

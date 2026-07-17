@@ -44,8 +44,10 @@
                         <td>{{ $val->nama }}</td>
                         <td>{{ $val->username }}</td>
                         <td>
-                            @forelse ($val->roles as $role)
-                                <span class="role-badge">{{ $role->nama_role }}</span>
+                            {{-- Peran aktif sebenarnya: Admin/Petugas Piket dari pivot,
+                                 Wali/Ketua Kelas di-derive dari kelas.* (sumber sama dgn header/dashboard). --}}
+                            @forelse ($val->dashboardPanels() as $roleLabel)
+                                <span class="role-badge">{{ $roleLabel }}</span>
                             @empty
                                 <span class="text-italic-muted">Tidak ada role</span>
                             @endforelse

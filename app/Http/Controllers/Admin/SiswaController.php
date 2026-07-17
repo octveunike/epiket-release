@@ -8,6 +8,7 @@ use App\Models\Admin\Siswa;
 use App\Models\Apps\Kelas;
 use App\Models\User;
 use App\Imports\SiswaImport;
+use App\Exports\SiswaExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -129,6 +130,17 @@ class SiswaController extends Controller
         ]);
 
         return redirect()->route('Siswa.index')->with('success', 'Data Siswa berhasil dihapus');
+    }
+
+    /**
+     * Unduh seluruh data siswa aktif sebagai Excel (format sama dengan template import).
+     */
+    public function export()
+    {
+        if (!auth()->user()->hasRole('Admin')) {
+            abort(403);
+        }
+        return Excel::download(new SiswaExport, 'Data_Siswa_' . now()->format('Ymd_His') . '.xlsx');
     }
 
     public function import(Request $request)

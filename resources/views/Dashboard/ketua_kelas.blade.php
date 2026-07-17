@@ -12,32 +12,12 @@
             {{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}
         </div>
     </div>
-    @if($viewMode === 'ketua' || !isset($kelas) || !$kelas)
-    <form method="GET" action="{{ route('admin.index') }}" style="display:flex; gap:8px; align-items:center;">
-        <input type="hidden" name="view" value="ketua">
-        <select name="kelas_id" class="form-control" style="width:180px;">
-            <option value="">-- Pilih Kelas --</option>
-            @foreach($daftarKelas as $k)
-                <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
-                    {{ $k->nama_kelas }}
-                </option>
-            @endforeach
-        </select>
-        <button type="submit" class="btn btn-primary btn-sm">
-            <i class="ri-search-line"></i> Tampilkan
-        </button>
-    </form>
-    @endif
 </div>
 
 @if(!isset($kelas) || !$kelas)
     <div class="empty-state" style="padding:60px 24px;">
         <i class="ri-user-star-line"></i>
-        <p>
-            @if($viewMode === 'ketua') Pilih kelas di atas untuk melihat dashboard
-            @else Anda belum terdaftar sebagai Ketua Kelas. Hubungi Admin.
-            @endif
-        </p>
+        <p>Anda belum terdaftar sebagai Ketua Kelas. Hubungi Admin.</p>
     </div>
 @else
 
@@ -62,16 +42,14 @@
             <span class="badge {{ $cls }}">{{ $statusVerifHariIni->nama_status ?? '-' }}</span>
         @endif
     </div>
-    @if(!$viewMode)
-        @if(!$absensiHariIni)
-            <a href="{{ route('Absensi.create') }}" class="btn btn-primary">
-                <i class="ri-add-line"></i> Input Absensi Hari Ini
-            </a>
-        @else
-            <a href="{{ route('Absensi.show', $absensiHariIni->id) }}" class="btn btn-secondary">
-                <i class="ri-eye-line"></i> Lihat Absensi Hari Ini
-            </a>
-        @endif
+    @if(!$absensiHariIni)
+        <a href="{{ route('Absensi.create') }}" class="btn btn-primary">
+            <i class="ri-add-line"></i> Input Absensi Hari Ini
+        </a>
+    @else
+        <a href="{{ route('Absensi.show', $absensiHariIni->id) }}" class="btn btn-secondary">
+            <i class="ri-eye-line"></i> Lihat Absensi Hari Ini
+        </a>
     @endif
 </div>
 

@@ -113,8 +113,7 @@
                     <th>Nama Siswa</th>
                     <th class="col-center">Status</th>
                     <th class="col-center">Waktu</th>
-                    <th>Keterangan</th>
-                    <th>Lampiran</th>
+                    <th class="col-center">Keterangan</th>
                 </tr>
             </thead>
             <tbody>
@@ -182,13 +181,20 @@
                                 <span class="text-muted-sm">—</span>
                             @endif
                         </td>
-                        <td class="text-muted-sm">{{ $d->keterangan ?: '—' }}</td>
-                        <td>
-                            @if ($d->lampiran_absensi)
-                                <a href="{{ asset('storage/' . $d->lampiran_absensi) }}"
-                                    target="_blank" class="link-lampiran">
-                                    <i class="ri-attachment-2"></i> Lihat
-                                </a>
+                        <td class="col-center">
+                            @php
+                                $sumber     = $sumberBySiswa[(int) $d->siswa_id] ?? ['kind' => 'manual', 'user' => '—'];
+                                $sumberText = $sumber['kind'] === 'dispensasi' ? ('Approval by ' . $sumber['user']) : $sumber['user'];
+                            @endphp
+                            @if (in_array((int) $sid, [1, 2, 3, 4, 5]) || $d->keterangan || $d->lampiran_absensi)
+                                <button type="button" class="btn btn-sm btn-secondary"
+                                    onclick="showKetDetail(this)"
+                                    data-nama="{{ $d->siswa->nama_siswa ?? '—' }}"
+                                    data-keterangan="{{ $d->keterangan ?: '—' }}"
+                                    data-sumber="{{ $sumberText }}"
+                                    data-lampiran="{{ $d->lampiran_absensi ? asset('storage/' . $d->lampiran_absensi) : '' }}">
+                                    <i class="ri-eye-line"></i> Detail
+                                </button>
                             @else
                                 <span class="text-muted-sm">—</span>
                             @endif
@@ -196,12 +202,57 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="td-empty">Belum ada data detail ketidakhadiran.</td>
+                        <td colspan="5" class="td-empty">Belum ada data detail ketidakhadiran.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 </div>
+
+{{-- Popup detail keterangan --}}
+<div class="confirm-overlay" id="ketDetailModal">
+    <div class="confirm-box" style="max-width:460px; text-align:left;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+            <i class="ri-file-list-3-line" style="color:var(--primary); font-size:20px;"></i>
+            <h3 style="margin:0;">Detail Keterangan</h3>
+        </div>
+        <div style="font-size:13px; line-height:1.6;">
+            <div style="color:var(--text-muted); font-size:12px;">Nama Siswa</div>
+            <div style="font-weight:600; margin-bottom:10px;" id="kdNama">—</div>
+
+            <div style="color:var(--text-muted); font-size:12px;">Keterangan</div>
+            <div style="margin-bottom:10px;" id="kdKeterangan">—</div>
+
+            <div style="color:var(--text-muted); font-size:12px;">Update Terakhir</div>
+            <div id="kdSumber">—</div>
+        </div>
+        <div class="confirm-actions" style="margin-top:18px; justify-content:flex-start;">
+            <a href="#" id="kdLampiran" target="_blank" class="btn btn-sm btn-primary" style="display:none;">
+                <i class="ri-attachment-2"></i> Lihat Lampiran
+            </a>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="closeKetDetail()">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showKetDetail(btn) {
+        document.getElementById('kdNama').textContent       = btn.getAttribute('data-nama') || '—';
+        document.getElementById('kdKeterangan').textContent = btn.getAttribute('data-keterangan') || '—';
+        document.getElementById('kdSumber').textContent     = btn.getAttribute('data-sumber') || '—';
+        var lamp = document.getElementById('kdLampiran');
+        var url  = btn.getAttribute('data-lampiran');
+        if (url) { lamp.href = url; lamp.style.display = 'inline-flex'; }
+        else     { lamp.style.display = 'none'; }
+        document.getElementById('ketDetailModal').classList.add('show');
+    }
+    function closeKetDetail() {
+        document.getElementById('ketDetailModal').classList.remove('show');
+    }
+    document.getElementById('ketDetailModal').addEventListener('click', function (e) {
+        if (e.target === this) closeKetDetail();
+    });
+</script>
 
 @endsection
